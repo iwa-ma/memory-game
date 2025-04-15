@@ -1,5 +1,117 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import styled from 'styled-components';
+
+// スタイル定義
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: #282c34;
+  padding: 2rem;
+  border-radius: 8px;
+  text-align: center;
+  border: 2px solid #61dafb;
+  box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
+  min-width: 300px;
+
+  h2 {
+    color: #61dafb;
+    margin: 0 0 1rem 0;
+    font-size: 2rem;
+  }
+
+  h3 {
+    color: white;
+    margin: 0.5rem 0;
+    font-size: 1.5rem;
+  }
+
+  p {
+    color: #888;
+    margin: 1rem 0 0 0;
+  }
+`;
+
+const CountdownDisplay = styled(motion.div)`
+  font-size: 4rem;
+  color: #61dafb;
+  margin: 1rem 0;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(97, 218, 251, 0.5);
+
+  &.start {
+    color: #4CAF50;
+    font-size: 3.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+`;
+
+const NumberGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  max-width: 500px;
+  margin: 0 auto;
+`;
+
+const NumberButton = styled(motion.button)`
+  background-color: #61dafb;
+  border: none;
+  border-radius: 8px;
+  color: #282c34;
+  font-size: 24px;
+  padding: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  aspect-ratio: 1;
+
+  &:hover {
+    background-color: #4fa8c6;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+`;
+
+const GameStatus = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+`;
+
+const Instruction = styled.div`
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: rgba(97, 218, 251, 0.1);
+  border-radius: 8px;
+  text-align: center;
+
+  h3 {
+    margin: 0.5rem 0;
+    color: #61dafb;
+  }
+
+  h3:first-child {
+    margin-bottom: 0.25rem;
+    font-size: 1.1em;
+  }
+`;
 
 /** index.tsxから受け取るProps型 */
 type QuestionModeProps = {
@@ -35,21 +147,17 @@ export const QuestionMode = ({
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   /** 出題フェーズの状態管理 */
   const [phase, setPhase] = useState<'preparing' | 'ready' | 'showing' | 'answering'>('preparing');
+  /** カウントダウン用の状態を修正 */
+  const [countdown, setCountdown] = useState<number | string>(3);
 
   /** デバッグ用：ゲームをリセットする処理 */
   const handleReset = () => {
     setPhase('preparing');
     setCurrentIndex(-1);
     setSequence([]);
+    setCountdown(3);
     generateSequence();
-
     setPhase('ready');
-    // 2秒後に showing フェーズへ移行
-    const timer = setTimeout(() => {
-      setPhase('showing');
-    }, 2000);
-    return () => clearTimeout(timer);
-
   };
 
   /** 問題生成処理 */
@@ -100,12 +208,51 @@ export const QuestionMode = ({
     generateSequence();
     // フェーズreadyを開始
     setPhase('ready');
-    // 2秒後に showing フェーズへ移行
-    const timer = setTimeout(() => {
-      setPhase('showing');
-    }, 2000);
-    return () => clearTimeout(timer);
+    // カウントダウンタイマーを開始
+    const countdownTimer = setInterval(() => {
+      setCountdown(prev => {
+        if (typeof prev === 'number' && prev <= 1) {
+          clearInterval(countdownTimer);
+          setPhase('showing');
+          return 3; // カウントダウンをリセット
+        }
+        return typeof prev === 'number' ? prev - 1 : prev;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(countdownTimer);
+    };
   }, []);
+
+  // カウントダウン用のuseEffect
+  useEffect(() => {
+    if (phase === 'ready') {
+      const countdownTimer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev === 1) {
+            clearInterval(countdownTimer);
+            // 0を表示
+            setCountdown(0);
+            // 1秒後にStartを表示してshowingフェーズへ
+            setTimeout(() => {
+              setCountdown('Start');
+              setTimeout(() => {
+                setPhase('showing');
+                setCountdown(3); // カウントダウンをリセット
+              }, 1000);
+            }, 1000);
+            return 0;
+          }
+          return typeof prev === 'number' ? prev - 1 : prev;
+        });
+      }, 1000);
+  
+      return () => {
+        clearInterval(countdownTimer);
+      };
+    }
+  }, [phase]);
 
   // 最新の5件を表示用
   const recentInputs = inputHistory.slice(0, 5);
@@ -114,7 +261,7 @@ export const QuestionMode = ({
 
   return (
     <>
-      <div className="game-status">
+      <GameStatus>
         <p>Level: {level}</p>
         <p>Score: {score}</p>
         <motion.button
@@ -125,36 +272,47 @@ export const QuestionMode = ({
         >
           リセット
         </motion.button>
-      </div>
+      </GameStatus>
 
       {/* readyフェーズ */}
       {phase === 'ready' && (
-        <div className="instruction">
-          <h3>問題の表示を開始します</h3>
-        </div>
+        <ModalOverlay>
+          <ModalContent>
+            <h2>Level {level}</h2>
+            <h3>問題の表示を開始します</h3>
+            <CountdownDisplay
+              key={countdown}
+              initial={{ scale: 1.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className={countdown === 'Start' ? 'start' : ''}
+            >
+              {countdown}
+            </CountdownDisplay>
+          </ModalContent>
+        </ModalOverlay>
       )}
 
       {/* showingフェーズ */}
       {phase === 'showing' && (
-        <div className="instruction">
+        <Instruction>
           <h3>数字をよく見ていてください</h3>
-        </div>
+        </Instruction>
       )}
 
       {/* answeringフェーズ */}
       {phase === 'answering' && (
-        <div className="instruction">
+        <Instruction>
           <h3>このレベルの出題数は{sequence.length}個です</h3>
           <h3>光った順番に数字を押してください</h3>
-        </div>
+        </Instruction>
       )}
 
       {/* 数字ボタン answeringフェーズ以外は無効 */}
-      <div className="number-grid">
+      <NumberGrid>
         {numbers.map((number, index) => (
-          <motion.button
+          <NumberButton
             key={number}
-            className="number-button"
             animate={{
               backgroundColor: currentIndex >= 0 && sequence[currentIndex] === index 
                 ? '#61dafb' 
@@ -164,9 +322,9 @@ export const QuestionMode = ({
             disabled={phase !== 'answering'}
           >
             {number}
-          </motion.button>
+          </NumberButton>
         ))}
-      </div>
+      </NumberGrid>
 
       {/* 回答入力履歴 */}
       <div className="input-history">
