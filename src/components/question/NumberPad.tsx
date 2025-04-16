@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 
 /** 数字ボタン枠のスタイル */
 const NumberGrid = styled.div`
@@ -53,21 +54,53 @@ export const NumberPad = ({
   sequence, 
   phase, 
   onNumberClick 
-}: NumberPadProps) => (
-  <NumberGrid>
-    {numbers.map((number, index) => (
-      <NumberButton
-        key={number}
-        animate={{
-          backgroundColor: currentIndex >= 0 && sequence[currentIndex] === index 
-            ? '#61dafb' 
-            : '#4a90e2'
-        }}
-        onClick={() => phase === 'answering' && onNumberClick(number)}
-        disabled={phase !== 'answering'}
-      >
-        {number}
-      </NumberButton>
-    ))}
-  </NumberGrid>
-);
+}: NumberPadProps) => {
+  // 音声オブジェクトをuseRefで保持
+  const soundsRef = useRef<{ [key: number]: HTMLAudioElement }>({});
+
+  // 初回マウント時のみ音声オブジェクトを生成
+  useEffect(() => {
+    numbers.forEach(num => {
+      soundsRef.current[num] = new Audio(`/sounds/${num}.mp3`);
+    });
+
+    // クリーンアップ関数
+    return () => {
+      Object.values(soundsRef.current).forEach(audio => {
+        audio.pause();
+        audio.currentTime = 0;
+      });
+    };
+  }, [numbers]);
+
+  // 音声再生のuseEffect
+  useEffect(() => {
+    if (currentIndex >= 0 && sequence[currentIndex] !== undefined) {
+      const sound = soundsRef.current[sequence[currentIndex]];
+      if (sound) {
+        sound.currentTime = 0; // 音声を最初から再生
+        sound.play();
+        console.log(`Playing sound for number: ${sequence[currentIndex]}`); // デバッグ用
+      }
+    }
+  }, [currentIndex, sequence]);
+
+  return (
+    <NumberGrid>
+      {numbers.map((number, index) => (
+        <NumberButton
+          key={number}
+          animate={{
+            backgroundColor: currentIndex >= 0 && sequence[currentIndex] === index 
+              ? '#61dafb' 
+              : '#4a90e2'
+          }}
+          onClick={() => phase === 'answering' && onNumberClick(number)}
+          disabled={phase !== 'answering'}
+        >
+          {number}
+        </NumberButton>
+      ))}
+    </NumberGrid>
+  );
+};
