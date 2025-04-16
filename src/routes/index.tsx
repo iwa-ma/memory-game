@@ -33,7 +33,6 @@ function App() {
   */
   const handleStartGame = () => {
     setGameMode('question');
-    // setLevel(prevLevel => prevLevel + 1); // Increment level when the game starts
   };
 
   return (

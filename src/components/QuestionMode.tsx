@@ -1,100 +1,12 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import styled from 'styled-components';
+import { GameStatus } from './question/GameStatus';
+import { CountdownModal } from './question/CountdownModal';
+import { NumberPad } from './question/NumberPad';
+import { InputHistory } from './question/InputHistory';
+import { generateSequence } from '../utils/gameUtils';
 
-// スタイル定義
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-`;
-
-const ModalContent = styled.div`
-  background: #282c34;
-  padding: 2rem;
-  border-radius: 8px;
-  text-align: center;
-  border: 2px solid #61dafb;
-  box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
-  min-width: 300px;
-
-  h2 {
-    color: #61dafb;
-    margin: 0 0 1rem 0;
-    font-size: 2rem;
-  }
-
-  h3 {
-    color: white;
-    margin: 0.5rem 0;
-    font-size: 1.5rem;
-  }
-
-  p {
-    color: #888;
-    margin: 1rem 0 0 0;
-  }
-`;
-
-const CountdownDisplay = styled(motion.div)`
-  font-size: 4rem;
-  color: #61dafb;
-  margin: 1rem 0;
-  font-weight: bold;
-  text-shadow: 0 0 10px rgba(97, 218, 251, 0.5);
-
-  &.start {
-    color: #4CAF50;
-    font-size: 3.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-`;
-
-const NumberGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  max-width: 500px;
-  margin: 0 auto;
-`;
-
-const NumberButton = styled(motion.button)`
-  background-color: #61dafb;
-  border: none;
-  border-radius: 8px;
-  color: #282c34;
-  font-size: 24px;
-  padding: 20px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  aspect-ratio: 1;
-
-  &:hover {
-    background-color: #4fa8c6;
-  }
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-`;
-
-const GameStatus = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
-`;
-
+/** メッセージ枠のスタイル */
 const Instruction = styled.div`
   margin: 1rem 0;
   padding: 1rem;
@@ -117,7 +29,7 @@ const Instruction = styled.div`
 type QuestionModeProps = {
   /** 数字ボタンの表示数設定 */
   numbers: number[];
-  /** 入力履歴の表示状態 */
+  /** 入力履歴管理配列 */
   inputHistory: number[];
   /** 入力履歴(すべて)の表示状態 */
   showAllHistory: boolean;
@@ -146,9 +58,16 @@ export const QuestionMode = ({
   /** 現在光らせているボタンのインデックス */
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   /** 出題フェーズの状態管理 */
-  const [phase, setPhase] = useState<'preparing' | 'ready' | 'showing' | 'answering'>('preparing');
+  const [phase, setPhase] = useState<'preparing' | 'ready' | 'showing' | 'answering'>('ready'); // 初期値をreadyに変更
   /** カウントダウン用の状態を修正 */
-  const [countdown, setCountdown] = useState<number | string>(3);
+  const [countdown, setCountdown] = useState<number | 'Start'>(3);
+
+  // 初期マウント時の問題生成
+  useEffect(() => {
+    if (phase === 'ready' && sequence.length === 0) {
+      handleGenerateSequence();
+    }
+  }, []);
 
   /** デバッグ用：ゲームをリセットする処理 */
   const handleReset = () => {
@@ -156,21 +75,13 @@ export const QuestionMode = ({
     setCurrentIndex(-1);
     setSequence([]);
     setCountdown(3);
-    generateSequence();
+    handleGenerateSequence();
     setPhase('ready');
   };
 
   /** 問題生成処理 */
-  const generateSequence = () => {
-    // 生成する数字の数(レベルに応じて数を増やす)
-    const sequenceLength = level + 2;  
-    
-    // 出題の個数分数字を生成
-    const newSequence = Array.from(
-      { length: sequenceLength }, 
-      () => Math.floor(Math.random() * numbers.length)
-    );
-    // 生成した数字配列で、問題の数字配列を更新
+  const handleGenerateSequence = () => {
+    const newSequence = generateSequence(level, numbers.length);
     setSequence(newSequence);
     return newSequence;
   };
@@ -188,9 +99,9 @@ export const QuestionMode = ({
         for (let i = 0; i < sequence.length; i++) {
           // ボタンを光らせる動作はmotion.buttonのanimateプロパティで行う、
           // setCurrentIndexで指定した添え字の数字が対象。
-          setCurrentIndex(i);  // ボタンを光らせる
+          setCurrentIndex(i);  // ボタンを光らせる(NumberPad.tsxで該当Indexのボタン色変更)
           await new Promise(resolve => setTimeout(resolve, showDuration));  // 表示時間を待つ
-          setCurrentIndex(-1);  // ボタンを消灯消す
+          setCurrentIndex(-1);  // ボタンを消灯消す(NumberPad.tsxで該当Indexのボタン色変更)
           // 次の数字まで待機（最後の数字の場合は待機しない）
           if (i < sequence.length - 1) {
             await new Promise(resolve => setTimeout(resolve, intervalDuration));
@@ -202,105 +113,66 @@ export const QuestionMode = ({
     }
   }, [phase, sequence]);
 
-  // 初回マウント
-  useEffect(() => {
-    // 問題生成
-    generateSequence();
-    // フェーズreadyを開始
-    setPhase('ready');
-    // カウントダウンタイマーを開始
-    const countdownTimer = setInterval(() => {
-      setCountdown(prev => {
-        if (typeof prev === 'number' && prev <= 1) {
-          clearInterval(countdownTimer);
-          setPhase('showing');
-          return 3; // カウントダウンをリセット
-        }
-        return typeof prev === 'number' ? prev - 1 : prev;
-      });
-    }, 1000);
-
-    return () => {
-      clearInterval(countdownTimer);
-    };
-  }, []);
-
-  // カウントダウン用のuseEffect
+  // 初回マウントとリセット時のカウントダウン処理を統一
   useEffect(() => {
     if (phase === 'ready') {
-      const countdownTimer = setInterval(() => {
-        setCountdown(prev => {
-          if (prev === 1) {
-            clearInterval(countdownTimer);
-            // 0を表示
+      // 問題生成（初回マウント時のみ）
+      if (sequence.length === 0) {
+        handleGenerateSequence();
+      }
+
+      // カウントダウン処理
+      setCountdown(3);
+      const timer1 = setTimeout(() => {
+        setCountdown(2);
+        
+        const timer2 = setTimeout(() => {
+          setCountdown(1);
+          
+          const timer3 = setTimeout(() => {
             setCountdown(0);
-            // 1秒後にStartを表示してshowingフェーズへ
-            setTimeout(() => {
+            
+            const timer4 = setTimeout(() => {
               setCountdown('Start');
-              setTimeout(() => {
+              
+              const timer5 = setTimeout(() => {
                 setPhase('showing');
-                setCountdown(3); // カウントダウンをリセット
+                setCountdown(3);
               }, 1000);
+              
+              return () => clearTimeout(timer5);
             }, 1000);
-            return 0;
-          }
-          return typeof prev === 'number' ? prev - 1 : prev;
-        });
+            
+            return () => clearTimeout(timer4);
+          }, 1000);
+          
+          return () => clearTimeout(timer3);
+        }, 1000);
+        
+        return () => clearTimeout(timer2);
       }, 1000);
-  
+
+      // クリーンアップ関数
       return () => {
-        clearInterval(countdownTimer);
+        clearTimeout(timer1);
       };
     }
-  }, [phase]);
-
-  // 最新の5件を表示用
-  const recentInputs = inputHistory.slice(0, 5);
-  // 6件目以降を折りたたみ表示用
-  const olderInputs = inputHistory.slice(5);
+  }, [phase, sequence.length]);
 
   return (
     <>
-      <GameStatus>
-        <p>Level: {level}</p>
-        <p>Score: {score}</p>
-        <motion.button
-          className="debug-button"
-          onClick={handleReset}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        >
-          リセット
-        </motion.button>
-      </GameStatus>
+      <GameStatus level={level} score={score} onReset={handleReset} />
 
-      {/* readyフェーズ */}
       {phase === 'ready' && (
-        <ModalOverlay>
-          <ModalContent>
-            <h2>Level {level}</h2>
-            <h3>問題の表示を開始します</h3>
-            <CountdownDisplay
-              key={countdown}
-              initial={{ scale: 1.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              className={countdown === 'Start' ? 'start' : ''}
-            >
-              {countdown}
-            </CountdownDisplay>
-          </ModalContent>
-        </ModalOverlay>
+        <CountdownModal level={level} countdown={countdown} />
       )}
 
-      {/* showingフェーズ */}
       {phase === 'showing' && (
         <Instruction>
           <h3>数字をよく見ていてください</h3>
         </Instruction>
       )}
 
-      {/* answeringフェーズ */}
       {phase === 'answering' && (
         <Instruction>
           <h3>このレベルの出題数は{sequence.length}個です</h3>
@@ -308,54 +180,19 @@ export const QuestionMode = ({
         </Instruction>
       )}
 
-      {/* 数字ボタン answeringフェーズ以外は無効 */}
-      <NumberGrid>
-        {numbers.map((number, index) => (
-          <NumberButton
-            key={number}
-            animate={{
-              backgroundColor: currentIndex >= 0 && sequence[currentIndex] === index 
-                ? '#61dafb' 
-                : '#4a90e2'
-            }}
-            onClick={() => phase === 'answering' && onNumberClick(number)}
-            disabled={phase !== 'answering'}
-          >
-            {number}
-          </NumberButton>
-        ))}
-      </NumberGrid>
+      <NumberPad
+        numbers={numbers}
+        currentIndex={currentIndex}
+        sequence={sequence}
+        phase={phase}
+        onNumberClick={onNumberClick}
+      />
 
-      {/* 回答入力履歴 */}
-      <div className="input-history">
-        <h3>入力履歴</h3>
-        {/* 最新5件を常に表示 */}
-        <div className="recent-inputs">
-          {recentInputs.map((num, idx) => (
-            <span key={idx} className="input-number">{num}</span>
-          ))}
-        </div>
-        
-        {/* 6件以上ある場合のみ表示 */}
-        {inputHistory.length > 5 && (
-          <>
-            <button 
-              className="show-more-button"
-              onClick={onToggleHistory}
-            >
-              {showAllHistory ? '履歴を隠す' : 'すべての履歴を表示'}
-            </button>
-            {/* 折りたたみ部分 */}
-            {showAllHistory && (
-              <div className="all-inputs">
-                {olderInputs.map((num, idx) => (
-                  <span key={idx} className="input-number">{num}</span>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      <InputHistory
+        inputHistory={inputHistory}
+        showAllHistory={showAllHistory}
+        onToggleHistory={onToggleHistory}
+      />
     </>
   );
 };
