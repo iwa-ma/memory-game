@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { GameStatus } from './question/GameStatus';
 import { CountdownModal } from './question/CountdownModal';
@@ -62,6 +62,27 @@ export const QuestionMode = ({
   /** カウントダウン用の状態を修正 */
   const [countdown, setCountdown] = useState<number | 'Start'>(3);
 
+  /** 音声オブジェクトの参照を保持 */
+  const audioRef = useRef<{ [key: string]: HTMLAudioElement }>({
+    3: new Audio('/sounds/3.mp3'),
+    2: new Audio('/sounds/2.mp3'),
+    1: new Audio('/sounds/1.mp3'),
+    0: new Audio('/sounds/0.mp3'),
+    start: new Audio('/sounds/start.mp3')
+  });
+
+  /** 音声を再生する関数 */
+  const playSound = (key: number | 'Start') => {
+    const soundKey = key.toString().toLowerCase();
+    const audio = audioRef.current[soundKey];
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play().catch(error => {
+        console.error('音声の再生に失敗しました:', error);
+      });
+    }
+  };
+
   // 初期マウント時の問題生成
   useEffect(() => {
     if (phase === 'ready' && sequence.length === 0) {
@@ -123,17 +144,23 @@ export const QuestionMode = ({
 
       // カウントダウン処理
       setCountdown(3);
+      playSound(3);
+
       const timer1 = setTimeout(() => {
         setCountdown(2);
+        playSound(2);
         
         const timer2 = setTimeout(() => {
           setCountdown(1);
+          playSound(1);
           
           const timer3 = setTimeout(() => {
             setCountdown(0);
+            playSound(0);
             
             const timer4 = setTimeout(() => {
               setCountdown('Start');
+              playSound('Start');
               
               const timer5 = setTimeout(() => {
                 setPhase('showing');
@@ -155,6 +182,11 @@ export const QuestionMode = ({
       // クリーンアップ関数
       return () => {
         clearTimeout(timer1);
+        // 音声をクリーンアップ
+        Object.values(audioRef.current).forEach(audio => {
+          audio.pause();
+          audio.currentTime = 0;
+        });
       };
     }
   }, [phase, sequence.length]);
