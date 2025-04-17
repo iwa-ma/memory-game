@@ -17,6 +17,10 @@ function App() {
   const [showAllHistory, setShowAllHistory] = useState(false);
   /** ゲームモード管理(初期値:waiting) */
   const [gameMode, setGameMode] = useState<'waiting' | 'question' | 'answer'>('waiting');
+  /** レベル管理 */
+  const [level, setLevel] = useState(1);
+  /** スコア管理 */
+  const [score, setScore] = useState(0);
 
   /** 数字クリック動作 */
   const handleNumberClick = (number: number) => {
@@ -33,18 +37,27 @@ function App() {
 
   return (
     <div className="App">
-      <header className="game-header">
+      <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
         <h1>Memory Game</h1>
         <p>Test your memory with this fun card matching game!</p>
-        {gameMode === 'waiting' && <WaitingMode onStart={handleStartGame} />}
+        {/* スタートボタン waitingモードで表示 */}
+        {gameMode === 'waiting' && (
+          <WaitingMode 
+            onStart={handleStartGame} 
+            level={level}
+          />
+        )}
       </header>
       
+      {/* ゲームエリア waitingモード以外で表示 */}
       <div className="game-area">
         {gameMode !== 'waiting' && (
           <QuestionMode
             numbers={numbers}
             inputHistory={inputHistory}
             showAllHistory={showAllHistory}
+            level={level}
+            score={score}
             onNumberClick={handleNumberClick}
             onToggleHistory={() => setShowAllHistory(!showAllHistory)}
           />
