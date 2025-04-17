@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import '../App.css'
-import { WaitingMode } from '../components/WaitingMode';
-import { QuestionMode } from '../components/QuestionMode';
+import '@/App.css'
+import { WaitingMode } from '@/components/WaitingMode';
+import { QuestionMode } from '@/components/QuestionMode';
 
 export const Route = createFileRoute('/')({
   component: App,

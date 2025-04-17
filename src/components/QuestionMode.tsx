@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import { GameStatus } from './question/GameStatus';
-import { CountdownModal } from './question/CountdownModal';
-import { NumberPad } from './question/NumberPad';
-import { InputHistory } from './question/InputHistory';
-import { generateSequence } from '../utils/gameUtils';
+import { GameStatus } from '@/components/question/GameStatus';
+import { CountdownModal } from '@/components/question/CountdownModal';
+import { NumberPad } from '@/components/question/NumberPad';
+import { InputHistory } from '@/components/question/InputHistory';
+import { generateSequence } from '@/utils/gameUtils';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
