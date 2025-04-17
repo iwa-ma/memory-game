@@ -76,9 +76,15 @@ export const QuestionMode = ({
     const soundKey = key.toString().toLowerCase();
     const audio = audioRef.current[soundKey];
     if (audio) {
+      // 再生中の音声を停止
+      audio.pause();
       audio.currentTime = 0;
+      // 新しい再生を開始
       audio.play().catch(error => {
-        console.error('音声の再生に失敗しました:', error);
+        // AbortErrorは無視（ユーザーがタブを切り替えた場合など）
+        if (error.name !== 'AbortError') {
+          console.error('音声の再生に失敗しました:', error);
+        }
       });
     }
   };
@@ -136,6 +142,8 @@ export const QuestionMode = ({
 
   // 初回マウントとリセット時のカウントダウン処理を統一
   useEffect(() => {
+    let timers: number[] = [];
+
     if (phase === 'ready') {
       // 問題生成（初回マウント時のみ）
       if (sequence.length === 0) {
@@ -146,42 +154,40 @@ export const QuestionMode = ({
       setCountdown(3);
       playSound(3);
 
-      const timer1 = setTimeout(() => {
+      const timer1 = window.setTimeout(() => {
         setCountdown(2);
         playSound(2);
         
-        const timer2 = setTimeout(() => {
+        const timer2 = window.setTimeout(() => {
           setCountdown(1);
           playSound(1);
           
-          const timer3 = setTimeout(() => {
+          const timer3 = window.setTimeout(() => {
             setCountdown(0);
             playSound(0);
             
-            const timer4 = setTimeout(() => {
+            const timer4 = window.setTimeout(() => {
               setCountdown('Start');
               playSound('Start');
               
-              const timer5 = setTimeout(() => {
+              const timer5 = window.setTimeout(() => {
                 setPhase('showing');
                 setCountdown(3);
               }, 1000);
-              
-              return () => clearTimeout(timer5);
+              timers.push(timer5);
             }, 1000);
-            
-            return () => clearTimeout(timer4);
+            timers.push(timer4);
           }, 1000);
-          
-          return () => clearTimeout(timer3);
+          timers.push(timer3);
         }, 1000);
-        
-        return () => clearTimeout(timer2);
+        timers.push(timer2);
       }, 1000);
+      timers.push(timer1);
 
       // クリーンアップ関数
       return () => {
-        clearTimeout(timer1);
+        // タイマーをクリア
+        timers.forEach(timer => clearTimeout(timer));
         // 音声をクリーンアップ
         Object.values(audioRef.current).forEach(audio => {
           audio.pause();
