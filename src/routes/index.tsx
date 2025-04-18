@@ -27,12 +27,34 @@ function App() {
     setInputHistory(prev => [number, ...prev]);
   };
 
+  /** レベルアップ処理 */
+  const handleLevelUp = () => {
+    setLevel(prev => prev + 1);
+    setInputHistory([]);
+  };
+
+  /** スコア更新処理 */
+  const handleScoreUpdate = (newScore: number) => {
+    setScore(newScore);
+  };
+
+  /** ゲーム終了処理 */
+  const handleGameEnd = () => {
+    setGameMode('waiting');
+    setInputHistory([]);
+    setLevel(1);  // レベルを1にリセット
+    setScore(0);  // スコアもリセット
+  };
+
   /** 
    * ゲームスタートボタンがクリックされたときに呼び出される関数
    * 出題モートに移行する。
   */
   const handleStartGame = () => {
     setGameMode('question');
+    setInputHistory([]);
+    setLevel(1);  // レベルを1にリセット
+    setScore(0);  // スコアもリセット
   };
 
   return (
@@ -60,6 +82,9 @@ function App() {
             score={score}
             onNumberClick={handleNumberClick}
             onToggleHistory={() => setShowAllHistory(!showAllHistory)}
+            onLevelUp={handleLevelUp}
+            onScoreUpdate={handleScoreUpdate}
+            onGameEnd={handleGameEnd}
           />
         )}
       </div>

@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /** 数字ボタン枠のスタイル */
 const NumberGrid = styled.div`
@@ -57,6 +57,8 @@ export const NumberPad = ({
 }: NumberPadProps) => {
   // 音声オブジェクトをuseRefで保持
   const soundsRef = useRef<{ [key: number]: HTMLAudioElement }>({});
+  // クリックされたボタンのインデックスを保持
+  const [clickedIndex, setClickedIndex] = useState<number | null>(null);
 
   // 初回マウント時のみ音声オブジェクトを生成
   useEffect(() => {
@@ -85,17 +87,28 @@ export const NumberPad = ({
     }
   }, [currentIndex, sequence]);
 
+  // クリック時のハンドラー
+  const handleClick = (number: number, index: number) => {
+    if (phase === 'answering') {
+      setClickedIndex(index);
+      // 0.3秒後に光を消す
+      setTimeout(() => setClickedIndex(null), 300);
+      onNumberClick(number);
+    }
+  };
+
   return (
     <NumberGrid>
       {numbers.map((number, index) => (
         <NumberButton
           key={number}
           animate={{
-            backgroundColor: currentIndex >= 0 && sequence[currentIndex] === index 
-              ? '#61dafb' 
-              : '#4a90e2'
+            backgroundColor: 
+              (currentIndex >= 0 && sequence[currentIndex] === index) || clickedIndex === index
+                ? '#61dafb' 
+                : '#4a90e2'
           }}
-          onClick={() => phase === 'answering' && onNumberClick(number)}
+          onClick={() => handleClick(number, index)}
           disabled={phase !== 'answering'}
         >
           {number}
