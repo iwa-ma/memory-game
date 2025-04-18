@@ -4,6 +4,7 @@ import { GameStatus } from '@/components/question/GameStatus';
 import { CountdownModal } from '@/components/question/CountdownModal';
 import { NumberPad } from '@/components/question/NumberPad';
 import { InputHistory } from '@/components/question/InputHistory';
+import { ResultModal } from '@/components/question/ResultModal';
 import { generateSequence } from '@/utils/gameUtils';
 
 /** メッセージ枠のスタイル */
@@ -41,6 +42,12 @@ type QuestionModeProps = {
   onNumberClick: (number: number) => void;
   /** 履歴表示クリック動作関数 */
   onToggleHistory: () => void;
+  /** レベル更新関数 */
+  onLevelUp: () => void;
+  /** スコア更新関数 */
+  onScoreUpdate: (newScore: number) => void;
+  /** ゲーム終了関数 */
+  onGameEnd: () => void;
 };
 
 /** 出題モードコンポーネント */
@@ -51,28 +58,39 @@ export const QuestionMode = ({
   level,
   score,
   onNumberClick,
-  onToggleHistory
+  onToggleHistory,
+  onLevelUp,
+  onScoreUpdate,
+  onGameEnd
 }: QuestionModeProps) => {
   /** 問題の数字配列 */
   const [sequence, setSequence] = useState<number[]>([]);
   /** 現在光らせているボタンのインデックス */
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   /** 出題フェーズの状態管理 */
-  const [phase, setPhase] = useState<'preparing' | 'ready' | 'showing' | 'answering'>('ready'); // 初期値をreadyに変更
+  const [phase, setPhase] = useState<'preparing' | 'ready' | 'showing' | 'answering' | 'result'>('ready');
   /** カウントダウン用の状態を修正 */
   const [countdown, setCountdown] = useState<number | 'Start'>(3);
+  /** 結果モーダルの表示状態 */
+  const [showResult, setShowResult] = useState(false);
+  /** 正解かどうかの状態 */
+  const [isCorrect, setIsCorrect] = useState(false);
 
   /** 音声オブジェクトの参照を保持 */
   const audioRef = useRef<{ [key: string]: HTMLAudioElement }>({
+    // カウントダウンの音声
     3: new Audio('/sounds/3.mp3'),
     2: new Audio('/sounds/2.mp3'),
     1: new Audio('/sounds/1.mp3'),
     0: new Audio('/sounds/0.mp3'),
-    start: new Audio('/sounds/start.mp3')
+    // 正解の音声
+    correct: new Audio('/sounds/correct.mp3'),
+    // 不正解の音声 
+    incorrect: new Audio('/sounds/incorrect.mp3')
   });
 
   /** 音声を再生する関数 */
-  const playSound = (key: number | 'Start') => {
+  const playSound = (key: number | 'Start' | 'correct' | 'incorrect') => {
     const soundKey = key.toString().toLowerCase();
     const audio = audioRef.current[soundKey];
     if (audio) {
@@ -150,39 +168,48 @@ export const QuestionMode = ({
         handleGenerateSequence();
       }
 
-      // カウントダウン処理
-      setCountdown(3);
-      playSound(3);
+      // 出題前のカウントダウン処理
+      const countdownDuration = 1000; // 1秒間隔
+      const initialDelay = 500; // 開始前の待機時間
 
-      const timer1 = window.setTimeout(() => {
-        setCountdown(2);
-        playSound(2);
-        
-        const timer2 = window.setTimeout(() => {
-          setCountdown(1);
-          playSound(1);
+      const startCountdown = () => {
+        setCountdown(3);
+        playSound(3);
+
+        const timer1 = window.setTimeout(() => {
+          setCountdown(2);
+          playSound(2);
           
-          const timer3 = window.setTimeout(() => {
-            setCountdown(0);
-            playSound(0);
+          const timer2 = window.setTimeout(() => {
+            setCountdown(1);
+            playSound(1);
             
-            const timer4 = window.setTimeout(() => {
-              setCountdown('Start');
-              playSound('Start');
+            const timer3 = window.setTimeout(() => {
+              setCountdown(0);
+              playSound(0);
               
-              const timer5 = window.setTimeout(() => {
-                setPhase('showing');
-                setCountdown(3);
-              }, 1000);
-              timers.push(timer5);
-            }, 1000);
-            timers.push(timer4);
-          }, 1000);
-          timers.push(timer3);
-        }, 1000);
-        timers.push(timer2);
-      }, 1000);
-      timers.push(timer1);
+              const timer4 = window.setTimeout(() => {
+                setCountdown('Start');
+                playSound('Start');
+                
+                const timer5 = window.setTimeout(() => {
+                  setPhase('showing');
+                  setCountdown(3);
+                }, countdownDuration);
+                timers.push(timer5);
+              }, countdownDuration);
+              timers.push(timer4);
+            }, countdownDuration);
+            timers.push(timer3);
+          }, countdownDuration);
+          timers.push(timer2);
+        }, countdownDuration);
+        timers.push(timer1);
+      };
+
+      // 初期待機時間を設定(3秒)
+      const initialTimer = window.setTimeout(startCountdown, initialDelay);
+      timers.push(initialTimer);
 
       // クリーンアップ関数
       return () => {
@@ -197,20 +224,96 @@ export const QuestionMode = ({
     }
   }, [phase, sequence.length]);
 
+  /** 回答を検証する関数 */
+  const validateAnswer = (input: number) => {
+    const currentAnswerIndex = inputHistory.length;
+    const isAnswerCorrect = input === sequence[currentAnswerIndex];
+
+    if (!isAnswerCorrect) {
+      // 不正解の場合
+      // 不正解の音声を再生
+      playSound('incorrect');
+      // 不正解の表示
+      setIsCorrect(false);
+      // 結果表示モーダーを表示
+      setShowResult(true);
+      // 結果表示モーダーを表示したら、resultフェーズに移行
+      setPhase('result');
+      return;
+    }
+
+    // 正解の場合、正解の音声を再生
+    playSound('correct');
+    
+    // すべて正解した場合
+    if (currentAnswerIndex === sequence.length - 1) {
+      // 正解の表示
+      setIsCorrect(true);
+      // 結果表示モーダーを表示
+      setShowResult(true);
+      // 結果表示モーダーを表示したら、resultフェーズに移行
+      setPhase('result');
+      // スコア加算
+      onScoreUpdate(score + level * 100); // レベルに応じたスコア加算
+    }
+  };
+
+  /** 結果表示モーダルで「次のレベルへ」クリック処理 */
+  const handleContinue = () => {
+    // 結果表示モーダーを非表示
+    setShowResult(false);
+    // 出題準備フェーズに移行
+    setPhase('preparing');
+    // ボタンを消灯
+    setCurrentIndex(-1);
+    // 問題をリセット
+    setSequence([]);
+    // カウントダウンを3秒にリセット
+    setCountdown(3);
+    // レベルアップ
+    onLevelUp();
+    // 問題を生成
+    handleGenerateSequence();
+    // 出題準備フェーズに移行
+    setPhase('ready');
+  };
+
+  /** 結果表示モーダルで「終了する」クリック処理 */
+  const handleEndGame = () => {
+    // 結果表示モーダーを非表示
+    setShowResult(false);
+    // ゲーム終了
+    onGameEnd();
+  };
+
+  // 回答フェーズで、数字クリック時の処理
+  const handleNumberClick = (number: number) => {
+    if (phase === 'answering') {
+      // 数字クリック動作関数を実行
+      onNumberClick(number);
+      // 回答を検証
+      validateAnswer(number);
+    }
+  };
+
   return (
     <>
+      {/* ゲームステータスコンポーネント */}
       <GameStatus level={level} score={score} onReset={handleReset} />
 
+      {/* カウントダウンモーダル */}
       {phase === 'ready' && (
         <CountdownModal level={level} countdown={countdown} />
       )}
 
+      {/* 出題フェーズの表示 */}
       {phase === 'showing' && (
         <Instruction>
           <h3>数字をよく見ていてください</h3>
         </Instruction>
       )}
 
+      {/* 回答フェーズの表示 */}
       {phase === 'answering' && (
         <Instruction>
           <h3>このレベルの出題数は{sequence.length}個です</h3>
@@ -218,19 +321,32 @@ export const QuestionMode = ({
         </Instruction>
       )}
 
+      {/* 数字ボタンコンポーネント */}
       <NumberPad
         numbers={numbers}
         currentIndex={currentIndex}
         sequence={sequence}
         phase={phase}
-        onNumberClick={onNumberClick}
+        onNumberClick={handleNumberClick}
       />
 
+      {/* 入力履歴コンポーネント */}
       <InputHistory
         inputHistory={inputHistory}
         showAllHistory={showAllHistory}
         onToggleHistory={onToggleHistory}
       />
+
+      {/* 結果表示コンポーネント　showResultがtrueの場合に表示 */}
+      {showResult && (
+        <ResultModal
+          isCorrect={isCorrect}
+          level={level}
+          score={score}
+          onContinue={handleContinue}
+          onEnd={handleEndGame}
+        />
+      )}
     </>
   );
 };
