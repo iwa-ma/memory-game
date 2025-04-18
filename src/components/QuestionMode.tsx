@@ -83,6 +83,7 @@ export const QuestionMode = ({
     2: new Audio('/sounds/2.mp3'),
     1: new Audio('/sounds/1.mp3'),
     0: new Audio('/sounds/0.mp3'),
+    start: new Audio('/sounds/start.mp3'),
     // 正解の音声
     correct: new Audio('/sounds/correct.mp3'),
     // 不正解の音声 
