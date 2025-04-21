@@ -5,11 +5,15 @@ import { useEffect, useRef, useState } from 'react';
 /** 数字ボタン枠のスタイル */
 const NumberGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  grid-template-columns: repeat(5, 1fr); /* デフォルトで5列 */
   gap: 10px;
   max-width: 500px;
   margin: 0 auto;
   padding: 0 10px;
+
+  @media (max-width: 480px) { /* スマートフォンサイズで3列に変更 */
+    grid-template-columns: repeat(3, 1fr);
+  }
 `;
 
 /** 数字ボタンのスタイル */
@@ -23,6 +27,10 @@ const NumberButton = styled(motion.button)`
   cursor: pointer;
   transition: background-color 0.3s ease;
   aspect-ratio: 1;
+
+  @media (max-width: 480px) {
+    font-size: 20px; /* スマートフォンサイズで文字サイズを少し小さく */
+  }
 
   &:hover {
     background-color: #4fa8c6;
