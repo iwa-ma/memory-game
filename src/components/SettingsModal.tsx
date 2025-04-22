@@ -1,4 +1,13 @@
+import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
+import type { RootState } from '@/store/store';
+import {
+  setQuestionVoice,
+  setQuestionSoundEnabled,
+  setButtonSoundEnabled,
+  setStartLevel,
+  setDifficultyLevel,
+} from '@/store/settingsSlice';
 
 /** モーダルオーバーレイのスタイル */
 const ModalOverlay = styled.div`
@@ -132,6 +141,9 @@ interface SettingsModalProps {
 
 /** 設定変更モーダルコンポーネント */
 export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
+  const dispatch = useDispatch();
+  const settings = useSelector((state: RootState) => state.settings);
+
   if (!isOpen) return null;
 
   return (
@@ -140,10 +152,13 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
         <h2>設定変更</h2>
         <SettingsSection>
           <h3>音声の種類</h3>
-          <StyledSelect>
-            <option value="voice1">音声1</option>
-            <option value="voice2">音声2</option>
-            <option value="cat">猫</option>
+          <StyledSelect
+            value={settings.questionVoice}
+            onChange={(e) => dispatch(setQuestionVoice(e.target.value as 'human1' | 'human2' | 'animal1'))}
+          >
+            <option value="human1">音声1</option>
+            <option value="human2">音声2</option>
+            <option value="animal1">猫</option>
           </StyledSelect>
         </SettingsSection>
 
@@ -151,11 +166,23 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <h3>出題音声</h3>
           <ToggleGroup>
             <label>
-              <input type="radio" name="questionVoice" value="on" defaultChecked />
+              <input
+                type="radio"
+                name="questionVoice"
+                value="on"
+                checked={settings.questionSoundEnabled}
+                onChange={() => dispatch(setQuestionSoundEnabled(true))}
+              />
               オン
             </label>
             <label>
-              <input type="radio" name="questionVoice" value="off" />
+              <input
+                type="radio"
+                name="questionVoice"
+                value="off"
+                checked={!settings.questionSoundEnabled}
+                onChange={() => dispatch(setQuestionSoundEnabled(false))}
+              />
               オフ
             </label>
           </ToggleGroup>
@@ -165,11 +192,23 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <h3>ボタンタッチ効果音</h3>
           <ToggleGroup>
             <label>
-              <input type="radio" name="buttonSound" value="on" defaultChecked />
+              <input
+                type="radio"
+                name="buttonSound"
+                value="on"
+                checked={settings.buttonSoundEnabled}
+                onChange={() => dispatch(setButtonSoundEnabled(true))}
+              />
               オン
             </label>
             <label>
-              <input type="radio" name="buttonSound" value="off" />
+              <input
+                type="radio"
+                name="buttonSound"
+                value="off"
+                checked={!settings.buttonSoundEnabled}
+                onChange={() => dispatch(setButtonSoundEnabled(false))}
+              />
               オフ
             </label>
           </ToggleGroup>
@@ -177,7 +216,10 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
 
         <SettingsSection>
           <h3>開始レベル(1~10)</h3>
-          <StyledSelect defaultValue="1">
+          <StyledSelect
+            value={settings.startLevel}
+            onChange={(e) => dispatch(setStartLevel(Number(e.target.value)))}
+          >
             {[...Array(10)].map((_, i) => (
               <option key={i + 1} value={i + 1}>
                 {i + 1}
@@ -188,7 +230,10 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
 
         <SettingsSection>
           <h3>難易度</h3>
-          <StyledSelect>
+          <StyledSelect
+            value={settings.difficultyLevel}
+            onChange={(e) => dispatch(setDifficultyLevel(e.target.value as 'easy' | 'normal' | 'hard'))}
+          >
             <option value="easy">簡単</option>
             <option value="normal">普通</option>
             <option value="hard">難しい</option>
