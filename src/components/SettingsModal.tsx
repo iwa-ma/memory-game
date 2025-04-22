@@ -3,8 +3,7 @@ import styled from 'styled-components';
 import type { RootState } from '@/store/store';
 import {
   setQuestionVoice,
-  setQuestionSoundEnabled,
-  setButtonSoundEnabled,
+  setSoundEnabled,
   setStartLevel,
   setDifficultyLevel,
 } from '@/store/settingsSlice';
@@ -163,51 +162,25 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
         </SettingsSection>
 
         <SettingsSection>
-          <h3>出題音声</h3>
+          <h3>音声</h3>
           <ToggleGroup>
             <label>
               <input
                 type="radio"
-                name="questionVoice"
+                name="soundEnabled"
                 value="on"
-                checked={settings.questionSoundEnabled}
-                onChange={() => dispatch(setQuestionSoundEnabled(true))}
+                checked={settings.soundEnabled}
+                onChange={() => dispatch(setSoundEnabled(true))}
               />
               オン
             </label>
             <label>
               <input
                 type="radio"
-                name="questionVoice"
+                name="soundEnabled"
                 value="off"
-                checked={!settings.questionSoundEnabled}
-                onChange={() => dispatch(setQuestionSoundEnabled(false))}
-              />
-              オフ
-            </label>
-          </ToggleGroup>
-        </SettingsSection>
-
-        <SettingsSection>
-          <h3>ボタンタッチ効果音</h3>
-          <ToggleGroup>
-            <label>
-              <input
-                type="radio"
-                name="buttonSound"
-                value="on"
-                checked={settings.buttonSoundEnabled}
-                onChange={() => dispatch(setButtonSoundEnabled(true))}
-              />
-              オン
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="buttonSound"
-                value="off"
-                checked={!settings.buttonSoundEnabled}
-                onChange={() => dispatch(setButtonSoundEnabled(false))}
+                checked={!settings.soundEnabled}
+                onChange={() => dispatch(setSoundEnabled(false))}
               />
               オフ
             </label>
