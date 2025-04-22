@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import { Provider } from 'react-redux'
+import { store } from '@/store/store'
 import '@/App.css'
 import { WaitingMode } from '@/components/WaitingMode';
 import { QuestionMode } from '@/components/QuestionMode';
@@ -58,36 +60,38 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
-        <h1>Memory Game</h1>
-        <p>Test your memory with this fun card matching game!</p>
-        {/* スタートボタン waitingモードで表示 */}
-        {gameMode === 'waiting' && (
-          <WaitingMode 
-            onStart={handleStartGame} 
-            level={level}
-          />
-        )}
-      </header>
-      
-      {/* ゲームエリア waitingモード以外で表示 */}
-      <div className="game-area">
-        {gameMode !== 'waiting' && (
-          <QuestionMode
-            numbers={numbers}
-            inputHistory={inputHistory}
-            showAllHistory={showAllHistory}
-            level={level}
-            score={score}
-            onNumberClick={handleNumberClick}
-            onToggleHistory={() => setShowAllHistory(!showAllHistory)}
-            onLevelUp={handleLevelUp}
-            onScoreUpdate={handleScoreUpdate}
-            onGameEnd={handleGameEnd}
-          />
-        )}
+    <Provider store={store}>
+      <div className="App">
+        <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
+          <h1>Memory Game</h1>
+          <p>Test your memory with this fun card matching game!</p>
+          {/* スタートボタン waitingモードで表示 */}
+          {gameMode === 'waiting' && (
+            <WaitingMode 
+              onStart={handleStartGame} 
+              level={level}
+            />
+          )}
+        </header>
+        
+        {/* ゲームエリア waitingモード以外で表示 */}
+        <div className="game-area">
+          {gameMode !== 'waiting' && (
+            <QuestionMode
+              numbers={numbers}
+              inputHistory={inputHistory}
+              showAllHistory={showAllHistory}
+              level={level}
+              score={score}
+              onNumberClick={handleNumberClick}
+              onToggleHistory={() => setShowAllHistory(!showAllHistory)}
+              onLevelUp={handleLevelUp}
+              onScoreUpdate={handleScoreUpdate}
+              onGameEnd={handleGameEnd}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </Provider>
   );
 }
