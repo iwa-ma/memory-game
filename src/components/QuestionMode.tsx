@@ -6,6 +6,8 @@ import { NumberPad } from '@/components/question/NumberPad';
 import { InputHistory } from '@/components/question/InputHistory';
 import { ResultModal } from '@/components/question/ResultModal';
 import { generateSequence } from '@/utils/gameUtils';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -66,6 +68,8 @@ export const QuestionMode = ({
   onGameEnd,
   soundEnabled
 }: QuestionModeProps) => {
+  /** 音声の種類 */
+  const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
   /** 問題の数字配列 */
   const [sequence, setSequence] = useState<number[]>([]);
   /** 現在光らせているボタンのインデックス */
@@ -85,15 +89,16 @@ export const QuestionMode = ({
   /** 音声オブジェクトを初期化する関数 */
   const initializeAudio = () => {
     if (soundEnabled) {
+      const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
       audioRef.current = {
         // カウントダウンの音声
-        3: new Audio('/sounds/3.mp3'),
-        2: new Audio('/sounds/2.mp3'),
-        1: new Audio('/sounds/1.mp3'),
-        0: new Audio('/sounds/0.mp3'),
-        start: new Audio('/sounds/start.mp3'),
+        3: new Audio(`/sounds/${voicePath}/3.mp3`),
+        2: new Audio(`/sounds/${voicePath}/2.mp3`),
+        1: new Audio(`/sounds/${voicePath}/1.mp3`),
+        0: new Audio(`/sounds/${voicePath}/0.mp3`),
+        start: new Audio(`/sounds/${voicePath}/start.mp3`),
         // 正解の音声
-        correct: new Audio('/sounds/correct.mp3'),
+        correct: new Audio(`/sounds/correct.mp3`),
         // 不正解の音声 
         incorrect: new Audio('/sounds/incorrect.mp3')
       };
@@ -120,10 +125,10 @@ export const QuestionMode = ({
     }
   };
 
-  // soundEnabledが変更されたときに音声オブジェクトを初期化
+  // soundEnabledまたはquestionVoiceが変更されたときに音声オブジェクトを初期化
   useEffect(() => {
     initializeAudio();
-  }, [soundEnabled]);
+  }, [soundEnabled, questionVoice]);
 
   // コンポーネントのアンマウント時に音声をクリーンアップ
   useEffect(() => {
