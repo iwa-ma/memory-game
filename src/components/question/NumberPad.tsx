@@ -66,9 +66,11 @@ export const NumberPad = ({
   phase, 
   onNumberClick 
 }: NumberPadProps) => {
-  // 音声の有効状態を取得 
+  /** 音声の有効状態 */
   const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
-  // 音声オブジェクトを保持
+  /** 音声の種類 */
+  const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
+  /** 音声オブジェクトの参照 */
   const soundsRef = useRef<{ [key: number]: HTMLAudioElement }>({});
   // クリックされたボタンのインデックスを保持
   const [clickedIndex, setClickedIndex] = useState<number | null>(null);
@@ -76,27 +78,28 @@ export const NumberPad = ({
   // 音声オブジェクトを初期化する関数
   const initializeSounds = () => {
     if (soundEnabled) {
+      const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
       soundsRef.current = {
-        0: new Audio('/sounds/human1/0.mp3'),
-        1: new Audio('/sounds/human1/1.mp3'),
-        2: new Audio('/sounds/human1/2.mp3'),
-        3: new Audio('/sounds/human1/3.mp3'),
-        4: new Audio('/sounds/human1/4.mp3'),
-        5: new Audio('/sounds/human1/5.mp3'),
-        6: new Audio('/sounds/human1/6.mp3'),
-        7: new Audio('/sounds/human1/7.mp3'),
-        8: new Audio('/sounds/human1/8.mp3'),
-        9: new Audio('/sounds/human1/9.mp3'),
+        0: new Audio(`/sounds/${voicePath}/0.mp3`),
+        1: new Audio(`/sounds/${voicePath}/1.mp3`),
+        2: new Audio(`/sounds/${voicePath}/2.mp3`),
+        3: new Audio(`/sounds/${voicePath}/3.mp3`),
+        4: new Audio(`/sounds/${voicePath}/4.mp3`),
+        5: new Audio(`/sounds/${voicePath}/5.mp3`),
+        6: new Audio(`/sounds/${voicePath}/6.mp3`),
+        7: new Audio(`/sounds/${voicePath}/7.mp3`),
+        8: new Audio(`/sounds/${voicePath}/8.mp3`),
+        9: new Audio(`/sounds/${voicePath}/9.mp3`),
       };
     } else {
       soundsRef.current = {};
     }
   };
 
-  // soundEnabledが変更されたときに音声オブジェクトを初期化
+  // soundEnabledまたはquestionVoiceが変更されたときに音声オブジェクトを初期化
   useEffect(() => {
     initializeSounds();
-  }, [soundEnabled]);
+  }, [soundEnabled, questionVoice]);
 
   // コンポーネントのアンマウント時に音声をクリーンアップ
   useEffect(() => {
