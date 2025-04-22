@@ -87,13 +87,13 @@ export const QuestionMode = ({
     if (soundEnabled) {
       audioRef.current = {
         // カウントダウンの音声
-        3: new Audio('/sounds/3.mp3'),
-        2: new Audio('/sounds/2.mp3'),
-        1: new Audio('/sounds/1.mp3'),
-        0: new Audio('/sounds/0.mp3'),
-        start: new Audio('/sounds/start.mp3'),
+        3: new Audio('/sounds/human1/3.mp3'),
+        2: new Audio('/sounds/human1/2.mp3'),
+        1: new Audio('/sounds/human1/1.mp3'),
+        0: new Audio('/sounds/human1/0.mp3'),
+        start: new Audio('/sounds/human1/start.mp3'),
         // 正解の音声
-        correct: new Audio('/sounds/correct.mp3'),
+        correct: new Audio('/sounds/human1/correct.mp3'),
         // 不正解の音声 
         incorrect: new Audio('/sounds/incorrect.mp3')
       };

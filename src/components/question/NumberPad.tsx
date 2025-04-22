@@ -77,16 +77,16 @@ export const NumberPad = ({
   const initializeSounds = () => {
     if (soundEnabled) {
       soundsRef.current = {
-        0: new Audio('/sounds/0.mp3'),
-        1: new Audio('/sounds/1.mp3'),
-        2: new Audio('/sounds/2.mp3'),
-        3: new Audio('/sounds/3.mp3'),
-        4: new Audio('/sounds/4.mp3'),
-        5: new Audio('/sounds/5.mp3'),
-        6: new Audio('/sounds/6.mp3'),
-        7: new Audio('/sounds/7.mp3'),
-        8: new Audio('/sounds/8.mp3'),
-        9: new Audio('/sounds/9.mp3'),
+        0: new Audio('/sounds/human1/0.mp3'),
+        1: new Audio('/sounds/human1/1.mp3'),
+        2: new Audio('/sounds/human1/2.mp3'),
+        3: new Audio('/sounds/human1/3.mp3'),
+        4: new Audio('/sounds/human1/4.mp3'),
+        5: new Audio('/sounds/human1/5.mp3'),
+        6: new Audio('/sounds/human1/6.mp3'),
+        7: new Audio('/sounds/human1/7.mp3'),
+        8: new Audio('/sounds/human1/8.mp3'),
+        9: new Audio('/sounds/human1/9.mp3'),
       };
     } else {
       soundsRef.current = {};
