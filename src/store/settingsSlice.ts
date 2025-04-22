@@ -5,10 +5,8 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 interface SettingsState {
   /** 音声の種類 */
   questionVoice: 'human1' | 'human2' | 'animal1';
-  /** 出題音声のオン/オフ */
-  questionSoundEnabled: boolean;
-  /** ボタンタッチ効果音のオン/オフ */
-  buttonSoundEnabled: boolean;
+  /** 音声のオン/オフ */
+  soundEnabled: boolean;
   /** 開始レベル */
   startLevel: number;
   /** 難易度 */
@@ -18,8 +16,7 @@ interface SettingsState {
 /** 初期状態 */
 const initialState: SettingsState = {
   questionVoice: 'human1',
-  questionSoundEnabled: true,
-  buttonSoundEnabled: true,
+  soundEnabled: true,
   startLevel: 1,
   difficultyLevel: 'normal',
 };
@@ -33,13 +30,9 @@ const settingsSlice = createSlice({
     setQuestionVoice: (state, action: PayloadAction<SettingsState['questionVoice']>) => {
       state.questionVoice = action.payload;
     },
-    /** 出題音声のオン/オフを設定 */
-    setQuestionSoundEnabled: (state, action: PayloadAction<boolean>) => {
-      state.questionSoundEnabled = action.payload;
-    },
-    /** ボタンタッチ効果音のオン/オフを設定 */
-    setButtonSoundEnabled: (state, action: PayloadAction<boolean>) => {
-      state.buttonSoundEnabled = action.payload;
+    /** 音声のオン/オフを設定 */
+    setSoundEnabled: (state, action: PayloadAction<boolean>) => {
+      state.soundEnabled = action.payload;
     },
     /** 開始レベルを設定 */
     setStartLevel: (state, action: PayloadAction<number>) => {
@@ -54,8 +47,7 @@ const settingsSlice = createSlice({
 
 export const {
   setQuestionVoice,
-  setQuestionSoundEnabled,
-  setButtonSoundEnabled,
+  setSoundEnabled,
   setStartLevel,
   setDifficultyLevel,
 } = settingsSlice.actions;
