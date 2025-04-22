@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Provider, useSelector } from 'react-redux'
 import { store } from '@/store/store'
 import type { RootState } from '@/store/store'
@@ -16,7 +16,10 @@ export const Route = createFileRoute('/')({
 })
 
 function App() {
+  /** 音声の有効状態 */
   const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
+  /** 開始レベル */
+  const startLevel = useSelector((state: RootState) => state.settings.startLevel);
   /** 数字ボタンの表示数設定 */
   const numbers = Array.from({ length: 10 }, (_, i) => i);
   /** 入力履歴の表示状態 */
@@ -26,9 +29,16 @@ function App() {
   /** ゲームモード管理(初期値:waiting) */
   const [gameMode, setGameMode] = useState<'waiting' | 'question' | 'answer'>('waiting');
   /** レベル管理 */
-  const [level, setLevel] = useState(1);
+  const [level, setLevel] = useState(startLevel);
   /** スコア管理 */
   const [score, setScore] = useState(0);
+
+  // startLevelが変更されたときにlevelを更新
+  useEffect(() => {
+    if (gameMode === 'waiting') {
+      setLevel(startLevel);
+    }
+  }, [startLevel, gameMode]);
 
   /** 数字クリック動作 */
   const handleNumberClick = (number: number) => {
@@ -50,7 +60,7 @@ function App() {
   const handleGameEnd = () => {
     setGameMode('waiting');
     setInputHistory([]);
-    setLevel(1);  // レベルを1にリセット
+    setLevel(startLevel);  // レベルをstartLevelにリセット
     setScore(0);  // スコアもリセット
   };
 
@@ -61,7 +71,7 @@ function App() {
   const handleStartGame = () => {
     setGameMode('question');
     setInputHistory([]);
-    setLevel(1);  // レベルを1にリセット
+    setLevel(startLevel);  // レベルをstartLevelにリセット
     setScore(0);  // スコアもリセット
   };
 
