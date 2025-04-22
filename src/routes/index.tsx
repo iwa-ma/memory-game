@@ -1,16 +1,22 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Provider } from 'react-redux'
+import { Provider, useSelector } from 'react-redux'
 import { store } from '@/store/store'
+import type { RootState } from '@/store/store'
 import '@/App.css'
 import { WaitingMode } from '@/components/WaitingMode';
 import { QuestionMode } from '@/components/QuestionMode';
 
 export const Route = createFileRoute('/')({
-  component: App,
+  component: () => (
+    <Provider store={store}>
+      <App />
+    </Provider>
+  ),
 })
 
 function App() {
+  const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
   /** 数字ボタンの表示数設定 */
   const numbers = Array.from({ length: 10 }, (_, i) => i);
   /** 入力履歴の表示状態 */
@@ -60,38 +66,37 @@ function App() {
   };
 
   return (
-    <Provider store={store}>
-      <div className="App">
-        <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
-          <h1>Memory Game</h1>
-          <p>Test your memory with this fun card matching game!</p>
-          {/* スタートボタン waitingモードで表示 */}
-          {gameMode === 'waiting' && (
-            <WaitingMode 
-              onStart={handleStartGame} 
-              level={level}
-            />
-          )}
-        </header>
-        
-        {/* ゲームエリア waitingモード以外で表示 */}
-        <div className="game-area">
-          {gameMode !== 'waiting' && (
-            <QuestionMode
-              numbers={numbers}
-              inputHistory={inputHistory}
-              showAllHistory={showAllHistory}
-              level={level}
-              score={score}
-              onNumberClick={handleNumberClick}
-              onToggleHistory={() => setShowAllHistory(!showAllHistory)}
-              onLevelUp={handleLevelUp}
-              onScoreUpdate={handleScoreUpdate}
-              onGameEnd={handleGameEnd}
-            />
-          )}
-        </div>
+    <div className="App">
+      <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
+        <h1>Memory Game</h1>
+        <p>Test your memory with this fun card matching game!</p>
+        {/* スタートボタン waitingモードで表示 */}
+        {gameMode === 'waiting' && (
+          <WaitingMode 
+            onStart={handleStartGame} 
+            level={level}
+          />
+        )}
+      </header>
+      
+      {/* ゲームエリア waitingモード以外で表示 */}
+      <div className="game-area">
+        {gameMode !== 'waiting' && (
+          <QuestionMode
+            numbers={numbers}
+            inputHistory={inputHistory}
+            showAllHistory={showAllHistory}
+            level={level}
+            score={score}
+            onNumberClick={handleNumberClick}
+            onToggleHistory={() => setShowAllHistory(!showAllHistory)}
+            onLevelUp={handleLevelUp}
+            onScoreUpdate={handleScoreUpdate}
+            onGameEnd={handleGameEnd}
+            soundEnabled={soundEnabled}
+          />
+        )}
       </div>
-    </Provider>
+    </div>
   );
 }

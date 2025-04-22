@@ -1,6 +1,8 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
 
 /** 数字ボタン枠のスタイル */
 const NumberGrid = styled.div`
@@ -64,25 +66,47 @@ export const NumberPad = ({
   phase, 
   onNumberClick 
 }: NumberPadProps) => {
-  // 音声オブジェクトをuseRefで保持
+  // 音声の有効状態を取得 
+  const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
+  // 音声オブジェクトを保持
   const soundsRef = useRef<{ [key: number]: HTMLAudioElement }>({});
   // クリックされたボタンのインデックスを保持
   const [clickedIndex, setClickedIndex] = useState<number | null>(null);
 
-  // 初回マウント時のみ音声オブジェクトを生成
-  useEffect(() => {
-    numbers.forEach(num => {
-      soundsRef.current[num] = new Audio(`/sounds/${num}.mp3`);
-    });
+  // 音声オブジェクトを初期化する関数
+  const initializeSounds = () => {
+    if (soundEnabled) {
+      soundsRef.current = {
+        0: new Audio('/sounds/0.mp3'),
+        1: new Audio('/sounds/1.mp3'),
+        2: new Audio('/sounds/2.mp3'),
+        3: new Audio('/sounds/3.mp3'),
+        4: new Audio('/sounds/4.mp3'),
+        5: new Audio('/sounds/5.mp3'),
+        6: new Audio('/sounds/6.mp3'),
+        7: new Audio('/sounds/7.mp3'),
+        8: new Audio('/sounds/8.mp3'),
+        9: new Audio('/sounds/9.mp3'),
+      };
+    } else {
+      soundsRef.current = {};
+    }
+  };
 
-    // クリーンアップ関数
+  // soundEnabledが変更されたときに音声オブジェクトを初期化
+  useEffect(() => {
+    initializeSounds();
+  }, [soundEnabled]);
+
+  // コンポーネントのアンマウント時に音声をクリーンアップ
+  useEffect(() => {
     return () => {
-      Object.values(soundsRef.current).forEach(audio => {
-        audio.pause();
-        audio.currentTime = 0;
+      Object.values(soundsRef.current).forEach(sound => {
+        sound.pause();
+        sound.currentTime = 0;
       });
     };
-  }, [numbers]);
+  }, []);
 
   // 音声再生のuseEffect
   useEffect(() => {
@@ -102,8 +126,21 @@ export const NumberPad = ({
       setClickedIndex(index);
       // 0.3秒後に光を消す
       setTimeout(() => setClickedIndex(null), 300);
-      onNumberClick(number);
+      handleNumberClick(number);
     }
+  };
+
+  /** 数字クリック動作関数 */
+  const handleNumberClick = (number: number) => {
+    // 音声がオンの場合は音声を再生
+    if (soundEnabled) {
+      const sound = soundsRef.current[number];
+      if (sound) {
+        sound.currentTime = 0;
+        sound.play();
+      }
+    }
+    onNumberClick(number);
   };
 
   return (
