@@ -48,6 +48,8 @@ type QuestionModeProps = {
   onScoreUpdate: (newScore: number) => void;
   /** ゲーム終了関数 */
   onGameEnd: () => void;
+  /** 音声の有効状態 */
+  soundEnabled: boolean;
 };
 
 /** 出題モードコンポーネント */
@@ -61,7 +63,8 @@ export const QuestionMode = ({
   onToggleHistory,
   onLevelUp,
   onScoreUpdate,
-  onGameEnd
+  onGameEnd,
+  soundEnabled
 }: QuestionModeProps) => {
   /** 問題の数字配列 */
   const [sequence, setSequence] = useState<number[]>([]);
@@ -77,18 +80,27 @@ export const QuestionMode = ({
   const [isCorrect, setIsCorrect] = useState(false);
 
   /** 音声オブジェクトの参照を保持 */
-  const audioRef = useRef<{ [key: string]: HTMLAudioElement }>({
-    // カウントダウンの音声
-    3: new Audio('/sounds/3.mp3'),
-    2: new Audio('/sounds/2.mp3'),
-    1: new Audio('/sounds/1.mp3'),
-    0: new Audio('/sounds/0.mp3'),
-    start: new Audio('/sounds/start.mp3'),
-    // 正解の音声
-    correct: new Audio('/sounds/correct.mp3'),
-    // 不正解の音声 
-    incorrect: new Audio('/sounds/incorrect.mp3')
-  });
+  const audioRef = useRef<{ [key: string]: HTMLAudioElement }>({});
+
+  /** 音声オブジェクトを初期化する関数 */
+  const initializeAudio = () => {
+    if (soundEnabled) {
+      audioRef.current = {
+        // カウントダウンの音声
+        3: new Audio('/sounds/3.mp3'),
+        2: new Audio('/sounds/2.mp3'),
+        1: new Audio('/sounds/1.mp3'),
+        0: new Audio('/sounds/0.mp3'),
+        start: new Audio('/sounds/start.mp3'),
+        // 正解の音声
+        correct: new Audio('/sounds/correct.mp3'),
+        // 不正解の音声 
+        incorrect: new Audio('/sounds/incorrect.mp3')
+      };
+    } else {
+      audioRef.current = {};
+    }
+  };
 
   /** 音声を再生する関数 */
   const playSound = (key: number | 'Start' | 'correct' | 'incorrect') => {
@@ -107,6 +119,21 @@ export const QuestionMode = ({
       });
     }
   };
+
+  // soundEnabledが変更されたときに音声オブジェクトを初期化
+  useEffect(() => {
+    initializeAudio();
+  }, [soundEnabled]);
+
+  // コンポーネントのアンマウント時に音声をクリーンアップ
+  useEffect(() => {
+    return () => {
+      Object.values(audioRef.current).forEach(audio => {
+        audio.pause();
+        audio.currentTime = 0;
+      });
+    };
+  }, []);
 
   // 初期マウント時の問題生成
   useEffect(() => {
