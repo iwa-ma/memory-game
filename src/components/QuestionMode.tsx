@@ -214,7 +214,7 @@ export const QuestionMode = ({
     return newSequence;
   };
 
-  /** 回答を検証する関数 */
+  /** 解答を検証する関数 */
   const validateAnswer = (input: number) => {
     const currentAnswerIndex = inputHistory.length;
     const isAnswerCorrect = input === sequence[currentAnswerIndex];
@@ -422,12 +422,12 @@ export const QuestionMode = ({
     onGameEnd();
   };
 
-  // 回答フェーズで、数字クリック時の処理
+  // 解答フェーズで、数字クリック時の処理
   const handleNumberClick = (number: number) => {
     if (phase === 'answering') {
       // 数字クリック動作関数を実行
       onNumberClick(number);
-      // 回答を検証
+      // 解答を検証
       validateAnswer(number);
     }
   };
@@ -449,7 +449,7 @@ export const QuestionMode = ({
         </Instruction>
       )}
 
-      {/* 回答フェーズの表示 */}
+      {/* 解答フェーズの表示 */}
       {phase === 'answering' && (
         <Instruction>
           <h3>このレベルの出題数は{sequence.length}個です</h3>
