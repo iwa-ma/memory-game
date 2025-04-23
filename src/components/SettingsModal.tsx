@@ -77,22 +77,6 @@ const ToggleGroup = styled.div`
   }
 `;
 
-/** レベル入力欄のスタイル */
-const LevelInput = styled.input`
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #444;
-  border-radius: 4px;
-  font-size: 1rem;
-  background-color: #2a2a2a;
-  color: #ffffff;
-
-  &:focus {
-    outline: none;
-    border-color: #61dafb;
-  }
-`;
-
 /** セレクトリストのスタイル */
 const StyledSelect = styled.select`
   width: 100%;
