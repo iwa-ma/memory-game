@@ -192,8 +192,60 @@ export const QuestionMode = ({
           // ボタンを光らせる動作はmotion.buttonのanimateプロパティで行う、
           // setCurrentIndexで指定した添え字の数字が対象。
           setCurrentIndex(i);  // ボタンを光らせる(NumberPad.tsxで該当Indexのボタン色変更)
-          await new Promise(resolve => setTimeout(resolve, showDuration));  // 表示時間を待つ
+          
+          // animal1の場合で、iが2の時(音声が長い：ニャウ～ン)は表示時間を長くする
+          const extraShowDuration = (questionVoice === 'animal1' && i === 2) ? 5000 : 0;
+          
+          // 音声の再生が完了するまで待機
+          await new Promise(resolve => {
+            let sound;
+            if (questionVoice === 'animal1') {
+              // animal1の場合、sequence[i]の値に応じて異なる音声を使用
+              switch (sequence[i]) {
+                case 0:
+                  sound = new Audio('/sounds/animal1/cat1.mp3');
+                  break;
+                case 1:
+                  sound = new Audio('/sounds/animal1/cat2.mp3');
+                  break;
+                case 2:
+                  sound = new Audio('/sounds/animal1/cat3.mp3');
+                  break;
+                case 3:
+                  sound = new Audio('/sounds/animal1/cat4.mp3');
+                  break;
+                default:
+                  sound = null;
+              }
+            } else {
+              // その他の音声オプションの場合
+              const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
+              sound = new Audio(`/sounds/${voicePath}/${sequence[i]}.mp3`);
+            }
+
+            if (sound) {
+              // 音声の再生が完了するまで待機
+              sound.onended = () => {
+                resolve(true);
+              };
+              
+              // 音声を再生
+              sound.play().catch(error => {
+                console.error('音声の再生に失敗しました:', error);
+                resolve(true);
+              });
+              
+              // 音声の再生が終了しない場合のタイムアウト
+              setTimeout(() => {
+                resolve(true);
+              }, showDuration + extraShowDuration);
+            } else {
+              resolve(true);
+            }
+          });
+          
           setCurrentIndex(-1);  // ボタンを消灯消す(NumberPad.tsxで該当Indexのボタン色変更)
+          
           // 次の数字まで待機（最後の数字の場合は待機しない）
           if (i < sequence.length - 1) {
             await new Promise(resolve => setTimeout(resolve, intervalDuration));

@@ -127,14 +127,7 @@ export const NumberPad = ({
 
   // 音声再生のuseEffect
   useEffect(() => {
-    if (currentIndex >= 0 && sequence[currentIndex] !== undefined) {
-      const sound = soundsRef.current[sequence[currentIndex]];
-      if (sound) {
-        sound.currentTime = 0; // 音声を最初から再生
-        sound.play();
-        console.log(`Playing sound for number: ${sequence[currentIndex]}`); // デバッグ用
-      }
-    }
+    // 音声の再生はQuestionMode.tsxで制御するため、ここでは何もしない
   }, [currentIndex, sequence]);
 
   // クリック時のハンドラー
