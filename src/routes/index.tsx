@@ -20,8 +20,10 @@ function App() {
   const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
   /** 開始レベル */
   const startLevel = useSelector((state: RootState) => state.settings.startLevel);
-  /** 数字ボタンの表示数設定 */
-  const numbers = Array.from({ length: 10 }, (_, i) => i);
+  /** 音声の種類 */
+  const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
+  /** 数字ボタンの表示数設定(animal1の場合は4、それ以外の場合は10)  */
+  const numbers = Array.from({ length: questionVoice === 'animal1' ? 4 : 10 }, (_, i) => i);
   /** 入力履歴の表示状態 */
   const [inputHistory, setInputHistory] = useState<number[]>([]);
   /** 入力履歴(すべて)の表示状態 */
