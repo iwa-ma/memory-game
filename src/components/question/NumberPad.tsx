@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 
@@ -66,62 +66,10 @@ export const NumberPad = ({
   phase, 
   onNumberClick 
 }: NumberPadProps) => {
-  /** 音声の有効状態 */
-  const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
   /** 音声の種類 */
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
-  /** 音声オブジェクトの参照 */
-  const soundsRef = useRef<{ [key: number]: HTMLAudioElement }>({});
   // クリックされたボタンのインデックスを保持
   const [clickedIndex, setClickedIndex] = useState<number | null>(null);
-
-  // 音声オブジェクトを初期化する関数
-  const initializeSounds = () => {
-    if (soundEnabled) {
-      const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
-      soundsRef.current = {
-        0: new Audio(`/sounds/${voicePath}/0.mp3`),
-        1: new Audio(`/sounds/${voicePath}/1.mp3`),
-        2: new Audio(`/sounds/${voicePath}/2.mp3`),
-        3: new Audio(`/sounds/${voicePath}/3.mp3`),
-        4: new Audio(`/sounds/${voicePath}/4.mp3`),
-        5: new Audio(`/sounds/${voicePath}/5.mp3`),
-        6: new Audio(`/sounds/${voicePath}/6.mp3`),
-        7: new Audio(`/sounds/${voicePath}/7.mp3`),
-        8: new Audio(`/sounds/${voicePath}/8.mp3`),
-        9: new Audio(`/sounds/${voicePath}/9.mp3`),
-      };
-    } else {
-      soundsRef.current = {};
-    }
-  };
-
-  // soundEnabledまたはquestionVoiceが変更されたときに音声オブジェクトを初期化
-  useEffect(() => {
-    initializeSounds();
-  }, [soundEnabled, questionVoice]);
-
-  // コンポーネントのアンマウント時に音声をクリーンアップ
-  useEffect(() => {
-    return () => {
-      Object.values(soundsRef.current).forEach(sound => {
-        sound.pause();
-        sound.currentTime = 0;
-      });
-    };
-  }, []);
-
-  // 音声再生のuseEffect
-  useEffect(() => {
-    if (currentIndex >= 0 && sequence[currentIndex] !== undefined) {
-      const sound = soundsRef.current[sequence[currentIndex]];
-      if (sound) {
-        sound.currentTime = 0; // 音声を最初から再生
-        sound.play();
-        console.log(`Playing sound for number: ${sequence[currentIndex]}`); // デバッグ用
-      }
-    }
-  }, [currentIndex, sequence]);
 
   // クリック時のハンドラー
   const handleClick = (number: number, index: number) => {
@@ -135,14 +83,6 @@ export const NumberPad = ({
 
   /** 数字クリック動作関数 */
   const handleNumberClick = (number: number) => {
-    // 音声がオンの場合は音声を再生
-    if (soundEnabled) {
-      const sound = soundsRef.current[number];
-      if (sound) {
-        sound.currentTime = 0;
-        sound.play();
-      }
-    }
     onNumberClick(number);
   };
 
@@ -160,7 +100,14 @@ export const NumberPad = ({
           onClick={() => handleClick(number, index)}
           disabled={phase !== 'answering'}
         >
-          {number}
+          {/* 音声の種類がanimal1の場合、ボタンに表示する文字を変更 */}
+          {questionVoice === 'animal1' ? (
+            number === 0 ? 'ニャー' :
+            number === 1 ? '甘え声' :
+            number === 2 ? 'ニャウ～ン' :
+            number === 3 ? 'ギニャー' :
+            number
+          ) : number}
         </NumberButton>
       ))}
     </NumberGrid>

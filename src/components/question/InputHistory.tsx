@@ -1,6 +1,41 @@
 import styled from 'styled-components';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store/store';
 
-/** QuestionMode.tsxから受け取るProps型 */
+/** 入力履歴のスタイル */
+const HistoryContainer = styled.div`
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: rgba(97, 218, 251, 0.1);
+  border-radius: 8px;
+`;
+
+/** 入力履歴のタイトル */
+const HistoryTitle = styled.h3`
+  margin: 0 0 0.5rem 0;
+  color: #61dafb;
+  text-align: center;
+`;
+
+/** 入力履歴の数字 */
+const InputNumber = styled.span`
+  display: inline-block;
+  margin: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #61dafb;
+  color: #282c34;
+  border-radius: 4px;
+  font-size: 1.2em;
+`;
+
+/** すべての入力履歴 */
+const AllInputs = styled.div`
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(97, 218, 251, 0.3);
+`;
+
+/** InputHistory.tsxから受け取るProps型 */
 type InputHistoryProps = {
   /** 入力履歴管理配列 */
   inputHistory: number[];
@@ -16,75 +51,50 @@ export const InputHistory = ({
   showAllHistory,
   onToggleHistory
 }: InputHistoryProps) => {
-  const recentInputs = inputHistory.slice(0, 5);
-  const olderInputs = inputHistory.slice(5);
+  /** 音声の種類 */
+  const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
+
+  /** 数字を表示用の文字列に変換する関数 */
+  const getDisplayText = (number: number): string => {
+    if (questionVoice === 'animal1') {
+      switch (number) {
+        case 0:
+          return 'ニャー';
+        case 1:
+          return '甘え声';
+        case 2:
+          return 'ニャウ～ン';
+        case 3:
+          return 'ギニャー';
+        default:
+          return number.toString();
+      }
+    }
+    return number.toString();
+  };
+
+  // 最新の入力履歴（最後の4つ）
+  const recentInputs = inputHistory.slice(-4);
+  // それ以前の入力履歴
+  const olderInputs = inputHistory.slice(0, -4);
 
   return (
     <HistoryContainer>
-      <h3>入力履歴</h3>
-      <RecentInputs>
+      <HistoryTitle onClick={onToggleHistory} style={{ cursor: 'pointer' }}>
+        入力履歴 {showAllHistory ? '▼' : '▲'}
+      </HistoryTitle>
+      <>
         {recentInputs.map((num, idx) => (
-          <InputNumber key={idx}>{num}</InputNumber>
+          <InputNumber key={idx}>{getDisplayText(num)}</InputNumber>
         ))}
-      </RecentInputs>
-      
-      {inputHistory.length > 5 && (
-        <>
-          <ShowMoreButton onClick={onToggleHistory}>
-            {showAllHistory ? '履歴を隠す' : 'すべての履歴を表示'}
-          </ShowMoreButton>
-          {showAllHistory && (
-            <AllInputs>
-              {olderInputs.map((num, idx) => (
-                <InputNumber key={idx}>{num}</InputNumber>
-              ))}
-            </AllInputs>
-          )}
-        </>
-      )}
+        {showAllHistory && (
+          <AllInputs>
+            {olderInputs.map((num, idx) => (
+              <InputNumber key={idx}>{getDisplayText(num)}</InputNumber>
+            ))}
+          </AllInputs>
+        )}
+      </>
     </HistoryContainer>
   );
 };
-
-const HistoryContainer = styled.div`
-  margin: 20px auto;
-  padding: 15px;
-  background-color: rgba(97, 218, 251, 0.1);
-  border-radius: 8px;
-  width: 100%;
-  max-width: 500px;
-  text-align: center;
-`;
-
-const RecentInputs = styled.div`
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-`;
-
-const InputNumber = styled.span`
-  background-color: #61dafb;
-  color: #282c34;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-weight: bold;
-  min-width: 40px;
-`;
-
-const ShowMoreButton = styled.button`
-  background: none;
-  border: none;
-  color: #61dafb;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 5px;
-`;
-
-const AllInputs = styled.div`
-  margin-top: 10px;
-  padding: 10px;
-  background-color: rgba(97, 218, 251, 0.05);
-  border-radius: 4px;
-`;

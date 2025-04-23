@@ -79,7 +79,6 @@ export const WaitingMode = ({ onStart, level }: WaitingModeProps) => {
 
   return (
     <div>
-      {/* TODO: レベル表示（変更機能実装予定）  */}
       <LevelDisplay>Level: {level}</LevelDisplay>
       <ButtonContainer>
         <StartButton
