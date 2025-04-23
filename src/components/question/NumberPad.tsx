@@ -77,20 +77,34 @@ export const NumberPad = ({
 
   // 音声オブジェクトを初期化する関数
   const initializeSounds = () => {
+    /** 音声の有効状態がtrueの場合 */
     if (soundEnabled) {
-      const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
-      soundsRef.current = {
-        0: new Audio(`/sounds/${voicePath}/0.mp3`),
-        1: new Audio(`/sounds/${voicePath}/1.mp3`),
-        2: new Audio(`/sounds/${voicePath}/2.mp3`),
-        3: new Audio(`/sounds/${voicePath}/3.mp3`),
-        4: new Audio(`/sounds/${voicePath}/4.mp3`),
-        5: new Audio(`/sounds/${voicePath}/5.mp3`),
-        6: new Audio(`/sounds/${voicePath}/6.mp3`),
-        7: new Audio(`/sounds/${voicePath}/7.mp3`),
-        8: new Audio(`/sounds/${voicePath}/8.mp3`),
-        9: new Audio(`/sounds/${voicePath}/9.mp3`),
-      };
+      let sounds;
+      /** 音声の種類がanimal1の場合 */
+      if (questionVoice === 'animal1') {
+        sounds = {
+          0: new Audio('/sounds/animal1/cat1.mp3'),
+          1: new Audio('/sounds/animal1/cat2.mp3'),
+          2: new Audio('/sounds/animal1/cat3.mp3'),
+          3: new Audio('/sounds/animal1/cat4.mp3'),
+        };
+      } else {
+        /** 音声の種類がanimal1以外の場合 */  
+        const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
+        sounds = {
+          0: new Audio(`/sounds/${voicePath}/0.mp3`),
+          1: new Audio(`/sounds/${voicePath}/1.mp3`),
+          2: new Audio(`/sounds/${voicePath}/2.mp3`),
+          3: new Audio(`/sounds/${voicePath}/3.mp3`),
+          4: new Audio(`/sounds/${voicePath}/4.mp3`),
+          5: new Audio(`/sounds/${voicePath}/5.mp3`),
+          6: new Audio(`/sounds/${voicePath}/6.mp3`),
+          7: new Audio(`/sounds/${voicePath}/7.mp3`),
+          8: new Audio(`/sounds/${voicePath}/8.mp3`),
+          9: new Audio(`/sounds/${voicePath}/9.mp3`),
+        };
+      }
+      soundsRef.current = sounds;
     } else {
       soundsRef.current = {};
     }

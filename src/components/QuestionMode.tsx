@@ -88,20 +88,34 @@ export const QuestionMode = ({
 
   /** 音声オブジェクトを初期化する関数 */
   const initializeAudio = () => {
+    /** 音声の有効状態がtrueの場合 */
     if (soundEnabled) {
-      const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
-      audioRef.current = {
-        // カウントダウンの音声
-        3: new Audio(`/sounds/${voicePath}/3.mp3`),
-        2: new Audio(`/sounds/${voicePath}/2.mp3`),
-        1: new Audio(`/sounds/${voicePath}/1.mp3`),
-        0: new Audio(`/sounds/${voicePath}/0.mp3`),
-        start: new Audio(`/sounds/${voicePath}/start.mp3`),
-        // 正解の音声
-        correct: new Audio(`/sounds/correct.mp3`),
-        // 不正解の音声 
-        incorrect: new Audio('/sounds/incorrect.mp3')
-      };
+      let audioFiles;
+      /** 音声の種類がanimal1の場合 */
+      if (questionVoice === 'animal1') {
+        audioFiles = {
+          3: new Audio('/sounds/animal1/cat1.mp3'),
+          2: new Audio('/sounds/animal1/cat1.mp3'),
+          1: new Audio('/sounds/animal1/cat1.mp3'),
+          0: new Audio('/sounds/animal1/cat1.mp3'),
+          start: new Audio('/sounds/animal1/cat2.mp3'),
+          correct: new Audio('/sounds/correct.mp3'),
+          incorrect: new Audio('/sounds/incorrect.mp3')
+        };
+      } else {
+        /** 音声の種類がanimal1以外の場合 */
+        const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
+        audioFiles = {
+          3: new Audio(`/sounds/${voicePath}/3.mp3`),
+          2: new Audio(`/sounds/${voicePath}/2.mp3`),
+          1: new Audio(`/sounds/${voicePath}/1.mp3`),
+          0: new Audio(`/sounds/${voicePath}/0.mp3`),
+          start: new Audio(`/sounds/${voicePath}/start.mp3`),
+          correct: new Audio('/sounds/correct.mp3'),
+          incorrect: new Audio('/sounds/incorrect.mp3')
+        };
+      }
+      audioRef.current = audioFiles;
     } else {
       audioRef.current = {};
     }
