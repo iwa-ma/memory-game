@@ -246,33 +246,41 @@ export const QuestionMode = ({
   /** 音声を再生して完了を待機する関数 */
   const playSoundAndWait = async (number: number, showDuration: number, extraShowDuration: number): Promise<void> => {
     return new Promise(resolve => {
-      let sound;
-      if (questionVoice === 'animal1') {
-        // animal1の場合、数字に応じて異なる音声を使用
-        switch (number) {
-          case 0:
-            sound = new Audio('/sounds/animal1/cat1.mp3');
-            break;
-          case 1:
-            sound = new Audio('/sounds/animal1/cat2.mp3');
-            break;
-          case 2:
-            sound = new Audio('/sounds/animal1/cat3.mp3');
-            break;
-          case 3:
-            sound = new Audio('/sounds/animal1/cat4.mp3');
-            break;
-          default:
-            resolve();
-            return;
+      // 音声オブジェクトを再利用
+      let sound = audioRef.current[number];
+      if (!sound) {
+        // 音声オブジェクトが存在しない場合のみ新規作成
+        if (questionVoice === 'animal1') {
+          switch (number) {
+            case 0:
+              sound = new Audio('/sounds/animal1/cat1.mp3');
+              break;
+            case 1:
+              sound = new Audio('/sounds/animal1/cat2.mp3');
+              break;
+            case 2:
+              sound = new Audio('/sounds/animal1/cat3.mp3');
+              break;
+            case 3:
+              sound = new Audio('/sounds/animal1/cat4.mp3');
+              break;
+            default:
+              resolve();
+              return;
+          }
+        } else {
+          const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
+          sound = new Audio(`/sounds/${voicePath}/${number}.mp3`);
         }
-      } else {
-        // その他の音声オプションの場合
-        const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
-        sound = new Audio(`/sounds/${voicePath}/${number}.mp3`);
+        // 作成した音声オブジェクトを保存
+        audioRef.current[number] = sound;
       }
 
       if (sound) {
+        // 既存の音声を停止
+        sound.pause();
+        sound.currentTime = 0;
+
         // 音声の再生が完了するまで待機
         sound.onended = () => {
           resolve();
@@ -304,25 +312,31 @@ export const QuestionMode = ({
         // 数字と数字の間の待機時間
         const intervalDuration = 400; // ミリ秒
 
-        for (let i = 0; i < sequence.length; i++) {
-          // ボタンを光らせる動作はmotion.buttonのanimateプロパティで行う、
-          // setCurrentIndexで指定した添え字の数字が対象。
-          setCurrentIndex(i);  // ボタンを光らせる(NumberPad.tsxで該当Indexのボタン色変更)
-          
-          // animal1の場合で、iが2の時(音声が長い：ニャウ～ン)は表示時間を長くする
-          const extraShowDuration = (questionVoice === 'animal1' && i === 2) ? 5000 : 0;
-          
-          // 音声の再生が完了するまで待機
-          await playSoundAndWait(sequence[i], showDuration, extraShowDuration);
-          
-          setCurrentIndex(-1);  // ボタンを消灯消す(NumberPad.tsxで該当Indexのボタン色変更)
-          
-          // 次の数字まで待機（最後の数字の場合は待機しない）
-          if (i < sequence.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, intervalDuration));
+        try {
+          for (let i = 0; i < sequence.length; i++) {
+            // ボタンを光らせる動作はmotion.buttonのanimateプロパティで行う、
+            // setCurrentIndexで指定した添え字の数字が対象。
+            setCurrentIndex(i);  // ボタンを光らせる(NumberPad.tsxで該当Indexのボタン色変更)
+            
+            // animal1の場合で、iが2の時(音声が長い：ニャウ～ン)は表示時間を長くする
+            const extraShowDuration = (questionVoice === 'animal1' && i === 2) ? 5000 : 0;
+            
+            // 音声の再生が完了するまで待機
+            await playSoundAndWait(sequence[i], showDuration, extraShowDuration);
+            
+            setCurrentIndex(-1);  // ボタンを消灯消す(NumberPad.tsxで該当Indexのボタン色変更)
+            
+            // 次の数字まで待機（最後の数字の場合は待機しない）
+            if (i < sequence.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, intervalDuration));
+            }
           }
+          setPhase('answering');
+        } catch (error) {
+          console.error('シーケンス表示中にエラーが発生しました:', error);
+          // エラーが発生した場合でも次のフェーズに進む
+          setPhase('answering');
         }
-        setPhase('answering');
       };
       showSequence();
     }
