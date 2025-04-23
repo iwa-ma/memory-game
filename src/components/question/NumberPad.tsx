@@ -174,7 +174,14 @@ export const NumberPad = ({
           onClick={() => handleClick(number, index)}
           disabled={phase !== 'answering'}
         >
-          {number}
+          {/* 音声の種類がanimal1の場合、ボタンに表示する文字を変更 */}
+          {questionVoice === 'animal1' ? (
+            number === 0 ? 'ニャー' :
+            number === 1 ? '甘え声' :
+            number === 2 ? 'ニャウ～ン' :
+            number === 3 ? 'ギニャー' :
+            number
+          ) : number}
         </NumberButton>
       ))}
     </NumberGrid>
