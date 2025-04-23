@@ -364,7 +364,7 @@ export const QuestionMode = ({
       {phase === 'answering' && (
         <Instruction>
           <h3>このレベルの出題数は{sequence.length}個です</h3>
-          <h3>光った順番に数字を押してください</h3>
+          <h3>{questionVoice === 'animal1' ? '光った順番に鳴き声を押してください' : '光った順番に数字を押してください'}</h3>
         </Instruction>
       )}
 
