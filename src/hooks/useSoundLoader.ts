@@ -1,13 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
+import { getAudioDuration } from '@/utils/audioUtils';
 
 type SoundFiles = {
   [key: string]: HTMLAudioElement;
 };
 
+type SoundDurations = {
+  [key: string]: number;
+};
+
 // グローバルな状態管理
 let globalSoundFiles: SoundFiles = {};
+let globalSoundDurations: SoundDurations = {};
 let isLoading = true;
 let isLoaded = false;
 let error: string | null = null;
@@ -20,6 +26,8 @@ export const useSoundLoader = () => {
   const [localIsLoading, setLocalIsLoading] = useState(isLoading);
   /** 音声ファイル */ 
   const [localSoundFiles, setLocalSoundFiles] = useState<SoundFiles>(globalSoundFiles);
+  /** 音声の長さ */
+  const [localSoundDurations, setLocalSoundDurations] = useState<SoundDurations>(globalSoundDurations);
   /** エラー */
   const [localError, setLocalError] = useState<string | null>(error);
   /** 初回マウント */
@@ -35,14 +43,21 @@ export const useSoundLoader = () => {
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
 
   /** 状態を更新する関数 */
-  const updateState = (loading: boolean, soundFiles: SoundFiles = {}, err: string | null = null) => {
+  const updateState = (loading: boolean, soundFiles: SoundFiles = {}, durations: SoundDurations = {}, err: string | null = null) => {
     isLoading = loading;
     isLoaded = !loading && err === null;
     error = err;
     globalSoundFiles = soundFiles;
+    globalSoundDurations = durations;
     
+    // ローカルな状態を更新
+    /** 読み込み中    */
     setLocalIsLoading(loading);
+    /** 音声ファイル */
     setLocalSoundFiles(soundFiles);
+    /** 音声の長さ */
+    setLocalSoundDurations(durations);
+    /** エラー */
     setLocalError(err);
 
     if (!loading) {
@@ -71,6 +86,7 @@ export const useSoundLoader = () => {
       try {
         updateState(true);
         const sounds: SoundFiles = {};
+        const durations: SoundDurations = {};
         
         // カウントダウンと開始音声
         if (questionVoice === 'animal1') {
@@ -110,51 +126,17 @@ export const useSoundLoader = () => {
         // 音声ファイルを事前に読み込む
         const loadResults = await Promise.all(
           Object.entries(sounds).map(
-            ([key, sound]) =>
-              new Promise<boolean>((resolve) => {
-                // 既に読み込み済みの場合はスキップ
-                if (sound.readyState === 4) {
-                  resolve(true);
-                  return;
-                }
-
-                console.log(`${key}の音声ファイルを読み込みます`);
-                
-                // 読み込み開始
-                sound.load();
-                
-                // 読み込み完了を待機
-                const handleCanPlayThrough = () => {
-                  console.log(`${key}の音声ファイルが読み込まれました`);
-                  if (sound.duration > 0) {
-                    sound.removeEventListener('canplaythrough', handleCanPlayThrough);
-                    clearTimeout(timeout);
-                    resolve(true);
-                  }
-                };
-                
-                sound.addEventListener('canplaythrough', handleCanPlayThrough);
-                
-                // エラー処理
-                sound.addEventListener('error', (e) => {
-                  console.error(`${key}の音声ファイルの読み込みに失敗しました:`, e);
-                  clearTimeout(timeout);
-                  resolve(false);
-                });
-
-                // タイムアウト処理
-                const timeout = setTimeout(() => {
-                  console.error(`${key}の音声ファイルの読み込みがタイムアウトしました`);
-                  sound.removeEventListener('canplaythrough', handleCanPlayThrough);
-                  resolve(false);
-                }, 10000);
-
-                // クリーンアップ
-                return () => {
-                  clearTimeout(timeout);
-                  sound.removeEventListener('canplaythrough', handleCanPlayThrough);
-                };
-              })
+            async ([key, sound]) => {
+              try {
+                // 音声ファイルの長さを取得
+                const duration = await getAudioDuration(sound.src);
+                durations[key] = duration;
+                return true;
+              } catch (error) {
+                console.error(`${key}の音声ファイルの長さ取得に失敗しました:`, error);
+                return false;
+              }
+            }
           )
         );
 
@@ -163,14 +145,14 @@ export const useSoundLoader = () => {
         
         if (allLoaded) {
           console.log('すべての音声ファイルの読み込みが完了しました');
-          updateState(false, sounds);
+          updateState(false, sounds, durations);
         } else {
           console.error('一部の音声ファイルの読み込みに失敗しました');
-          updateState(false, {}, '一部の音声ファイルの読み込みに失敗しました');
+          updateState(false, {}, {}, '一部の音声ファイルの読み込みに失敗しました');
         }
       } catch (err) { 
         console.error('音声ファイルの読み込みに失敗しました:', err);
-        updateState(false, {}, '音声ファイルの読み込みに失敗しました');
+        updateState(false, {}, {}, '音声ファイルの読み込みに失敗しました');
       }
     })();
 
@@ -211,20 +193,39 @@ export const useSoundLoader = () => {
     }
   }, [questionVoice]);
 
+  const playSound = async (soundName: string): Promise<{ duration: number }> => {
+    // 音声ファイルが読み込まれていない場合はエラー
+    if (!isLoaded) {
+      console.warn('音声ファイルが読み込まれていません');
+      return { duration: 0 };
+    }
+
+    const sound = localSoundFiles[soundName];
+    if (!sound) {
+      console.warn(`音声ファイルが見つかりません: ${soundName}`);
+      return { duration: 0 };
+    }
+
+    const duration = localSoundDurations[soundName] || 0;
+
+    return new Promise((resolve) => {
+      sound.currentTime = 0;
+      sound.play();
+      sound.onended = () => resolve({ duration });
+    });
+  };
+
+  // 音声の長さを取得する関数
+  const getSoundDuration = (soundName: string): number => {
+    return localSoundDurations[soundName] || 0;
+  };
+
   return {
     isLoading: localIsLoading,
+    isLoaded,
     error: localError,
-    playSound: (key: string) => {
-      if (!soundEnabled) return;
-
-      const sound = localSoundFiles[key];
-      if (sound) {
-        sound.currentTime = 0;
-        sound.play().catch(error => {
-          console.error('音声の再生に失敗しました:', error);
-        });
-      }
-    },
+    playSound,
+    getSoundDuration,
     soundFiles: localSoundFiles
   };
 }; 

@@ -84,7 +84,7 @@ export const QuestionMode = ({
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
 
   /** 音声ローダー(実際の読み込み状態を表す) */
-  const { playSound, isLoading } = useSoundLoader();
+  const { playSound, getSoundDuration, isLoading } = useSoundLoader();
 
   // 音声ファイルの読み込み状態を監視
   useEffect(() => {
@@ -168,49 +168,54 @@ export const QuestionMode = ({
     // showingフェーズで、出題数字が存在する場合に実行
     if (phase === 'showing' && sequence.length > 0) {
       const showSequence = async () => {
-        // 各数字の表示時間
-        const showDuration = 800; // ミリ秒
-        // 数字と数字の間の待機時間
-        const intervalDuration = 400; // ミリ秒
-
         try {
           for (let i = 0; i < sequence.length; i++) {
             // ボタンを光らせる動作はmotion.buttonのanimateプロパティで行う、
             // setCurrentIndexで指定した添え字の数字が対象。
             setCurrentIndex(i);  // ボタンを光らせる(NumberPad.tsxで該当Indexのボタン色変更)
             
-            // animal1の場合で、iが2の時(音声が長い：ニャウ～ン)は表示時間を長くする
-            const extraShowDuration = (questionVoice === 'animal1' && i === 2) ? 5000 : 0;
-            
             // 音声を再生
-            if (questionVoice === 'animal1') {
-              switch (sequence[i]) {
-                case 0:
-                  playSound('cat1');
-                  break;
-                case 1:
-                  playSound('cat2');
-                  break;
-                case 2:
-                  playSound('cat3');
-                  break;
-                case 3:
-                  playSound('cat4');
-                  break;
+            try {
+              let soundName = '';
+              
+              if (questionVoice === 'animal1') {
+                switch (sequence[i]) {
+                  case 0:
+                    soundName = 'cat1';
+                    break;
+                  case 1:
+                    soundName = 'cat2';
+                    break;
+                  case 2:
+                    soundName = 'cat3';
+                    break;
+                  case 3:
+                    soundName = 'cat4';
+                    break;
+                }
+              } else {
+                soundName = `num${sequence[i]}`;
               }
-            } else {
-              playSound(`num${sequence[i]}`);
+
+              // 音声の長さに余裕を持たせる（0.5秒）
+              const displayDuration = (getSoundDuration(soundName) * 1000) + 500;
+              
+              // 音声の再生と表示時間の待機を同時に開始
+              await Promise.all([
+                playSound(soundName),
+                new Promise(resolve => setTimeout(resolve, displayDuration))
+              ]);
+            } catch (error) {
+              console.warn('音声の再生に失敗しました:', error);
             }
-            
-            // 表示時間を待機
-            await new Promise(resolve => setTimeout(resolve, showDuration + extraShowDuration));
             
             // ボタンを消灯
             setCurrentIndex(-1);
             
             // 次の数字まで待機（最後の数字の場合は待機しない）
             if (i < sequence.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, intervalDuration));
+              // 次の音声の準備時間（0.3秒）
+              await new Promise(resolve => setTimeout(resolve, 300));
             }
           }
         } catch (error) {
@@ -236,31 +241,43 @@ export const QuestionMode = ({
       }
 
       // 出題前のカウントダウン処理
-      const countdownDuration = 1000; // 1秒間隔
-      const initialDelay = 500; // 開始前の待機時間
-
       const startCountdown = async () => {
         try {
           setCountdown(3);
-          await playSound('3');
-          // 再生完了後、Promiseを使って、1秒待機
-          await new Promise(resolve => setTimeout(resolve, countdownDuration));
+          const duration3 = getSoundDuration('3');
+          // 音声の再生と同時に待機を開始
+          await Promise.all([
+            playSound('3'),
+            new Promise(resolve => setTimeout(resolve, duration3 * 1000))
+          ]);
 
           setCountdown(2);
-          await playSound('2');
-          await new Promise(resolve => setTimeout(resolve, countdownDuration));
+          const duration2 = getSoundDuration('2');
+          await Promise.all([
+            playSound('2'),
+            new Promise(resolve => setTimeout(resolve, duration2 * 1000))
+          ]);
 
           setCountdown(1);
-          await playSound('1');
-          await new Promise(resolve => setTimeout(resolve, countdownDuration));
+          const duration1 = getSoundDuration('1');
+          await Promise.all([
+            playSound('1'),
+            new Promise(resolve => setTimeout(resolve, duration1 * 1000))
+          ]);
 
           setCountdown(0);
-          await playSound('0');
-          await new Promise(resolve => setTimeout(resolve, countdownDuration));
+          const duration0 = getSoundDuration('0');
+          await Promise.all([
+            playSound('0'),
+            new Promise(resolve => setTimeout(resolve, duration0 * 1000))
+          ]);
 
           setCountdown('Start');
-          await playSound('start');
-          await new Promise(resolve => setTimeout(resolve, countdownDuration));
+          const durationStart = getSoundDuration('start');
+          await Promise.all([
+            playSound('start'),
+            new Promise(resolve => setTimeout(resolve, durationStart * 1000))
+          ]);
 
           setPhase('showing');
           setCountdown(3);
@@ -272,7 +289,7 @@ export const QuestionMode = ({
       };
 
       // 初期待機時間を設定(3秒)
-      const initialTimer = window.setTimeout(startCountdown, initialDelay);
+      const initialTimer = window.setTimeout(startCountdown, 500);
       timers.push(initialTimer);
 
       // クリーンアップ関数
