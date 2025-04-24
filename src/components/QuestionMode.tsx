@@ -231,8 +231,6 @@ export const QuestionMode = ({
 
   // 初回マウントとリセット時のカウントダウン処理を統一
   useEffect(() => {
-    let timers: number[] = [];
-
     // 音声ファイルの読み込みが完了した場合に実行
     if (phase === 'ready' && isSoundLoaded) {
       // 問題生成（初回マウント時のみ）
@@ -288,15 +286,8 @@ export const QuestionMode = ({
         }
       };
 
-      // 初期待機時間を設定(3秒)
-      const initialTimer = window.setTimeout(startCountdown, 500);
-      timers.push(initialTimer);
-
-      // クリーンアップ関数
-      return () => {
-        // タイマーをクリア
-        timers.forEach(timer => clearTimeout(timer));
-      };
+      // 音声ファイルの読み込みが完了したらすぐにカウントダウンを開始
+      startCountdown();
     }
   }, [phase, sequence.length, isSoundLoaded]);
 
