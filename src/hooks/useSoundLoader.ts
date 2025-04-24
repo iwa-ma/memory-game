@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 
@@ -18,6 +18,7 @@ export const useSoundLoader = () => {
   const [localIsLoading, setLocalIsLoading] = useState(isLoading);
   const [localSoundFiles, setLocalSoundFiles] = useState<SoundFiles>(globalSoundFiles);
   const [localError, setLocalError] = useState<string | null>(error);
+  const isFirstRender = useRef(true);
 
   /** 音声の有効状態 */
   const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
@@ -25,6 +26,12 @@ export const useSoundLoader = () => {
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
 
   useEffect(() => {
+    // Strict Mode の二重実行を防ぐ
+    if (!isFirstRender.current) {
+      return;
+    }
+    isFirstRender.current = false;
+
     // 呼び出し元のコンポーネントを特定
     console.log('useSoundLoaderが呼び出されました');
     console.trace('呼び出し元のスタックトレース:');
