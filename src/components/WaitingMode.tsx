@@ -98,6 +98,9 @@ export const WaitingMode = ({
 }: WaitingModeProps) => {
   const { isLoading } = useSoundLoader();
 
+  // 設定変更時のみローディング状態を表示
+  const showLoading = isLoading && isSettingsOpen;
+
   return (
     <div>
       <LevelDisplay>Level: {level}</LevelDisplay>
@@ -113,15 +116,15 @@ export const WaitingMode = ({
             ease: "easeInOut"
           }}
           onClick={onStart}
-          disabled={isLoading}
+          disabled={showLoading}
         >
-          {isLoading ? '読み込み中...' : 'ゲームスタート'}
+          {showLoading ? '読み込み中...' : 'ゲームスタート'}
         </StartButton>
         <SettingsButton
           onClick={onSettingsOpen}
-          disabled={isLoading}
+          disabled={showLoading}
         >
-          {isLoading ? '読み込み中...' : '設定変更'}
+          {showLoading ? '読み込み中...' : '設定変更'}
         </SettingsButton>
       </ButtonContainer>
       <SettingsModal 

@@ -67,8 +67,17 @@ function App() {
   const [score, setScore] = useState(0);
   /** 設定モーダルの表示状態 */
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  /** 初回読み込みフラグ */
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const { isLoading, error } = useSoundLoader();
+
+  // 初回読み込み完了時にフラグを更新
+  useEffect(() => {
+    if (!isLoading && isInitialLoad) {
+      setIsInitialLoad(false);
+    }
+  }, [isLoading]);
 
   // startLevelが変更されたときにlevelを更新
   useEffect(() => {
@@ -113,7 +122,7 @@ function App() {
   };
 
   /** 音声ファイル読み込み中の表示 */
-  if (isLoading) {
+  if (isLoading && isInitialLoad) {
     return (
       <LoadingContainer>
         <LoadingText>音声ファイルを読み込み中...</LoadingText>
