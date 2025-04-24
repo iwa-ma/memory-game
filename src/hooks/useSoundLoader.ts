@@ -6,12 +6,18 @@ type SoundFiles = {
   [key: string]: HTMLAudioElement;
 };
 
+// グローバルな状態管理
+let globalSoundFiles: SoundFiles = {};
+let isLoading = true;
+let isLoaded = false;
+let error: string | null = null;
+
 /** 音声ファイルの読み込み状態を管理するフック */
 export const useSoundLoader = () => {
   /** 音声ファイルの読み込み状態 */
-  const [isLoading, setIsLoading] = useState(true);
-  const [soundFiles, setSoundFiles] = useState<SoundFiles>({});
-  const [error, setError] = useState<string | null>(null);
+  const [localIsLoading, setLocalIsLoading] = useState(isLoading);
+  const [localSoundFiles, setLocalSoundFiles] = useState<SoundFiles>(globalSoundFiles);
+  const [localError, setLocalError] = useState<string | null>(error);
 
   /** 音声の有効状態 */
   const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
@@ -19,9 +25,27 @@ export const useSoundLoader = () => {
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
 
   useEffect(() => {
+    // 呼び出し元のコンポーネントを特定
+    console.log('useSoundLoaderが呼び出されました');
+    console.trace('呼び出し元のスタックトレース:');
+
+    // より詳細なデバッグ情報を出力
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      isLoaded,
+      isLoading,
+      soundEnabled,
+      questionVoice
+    };
+    console.log('デバッグ情報:', debugInfo);
+
     const loadSounds = async () => {
-      if (!soundEnabled) {
-        setIsLoading(false);
+      // すでに読み込みが完了している場合は何もしない
+      if (isLoaded || !soundEnabled) {
+        isLoading = false;
+        setLocalIsLoading(false);
         return;
       }
 
@@ -61,38 +85,89 @@ export const useSoundLoader = () => {
           }
         }
 
+        console.log('音声ファイルの読み込みを開始します');
+
         // 音声ファイルを事前に読み込む
-        await Promise.all(
-          Object.values(sounds).map(
-            sound =>
-              new Promise((resolve) => {
-                sound.addEventListener('canplaythrough', resolve, { once: true });
+        const loadResults = await Promise.all(
+          Object.entries(sounds).map(
+            ([key, sound]) =>
+              new Promise<boolean>((resolve) => {
+                console.log(`${key}の音声ファイルを読み込みます`);
+                
+                // 読み込み開始
                 sound.load();
+                
+                // 読み込み完了を待機
+                const handleCanPlayThrough = () => {
+                  console.log(`${key}の音声ファイルが読み込まれました`);
+                  // 音声の長さが0より大きいことを確認
+                  if (sound.duration > 0) {
+                    console.log(`${key}の音声ファイルの長さ: ${sound.duration}秒`);
+                    sound.removeEventListener('canplaythrough', handleCanPlayThrough);
+                    resolve(true);
+                  } else {
+                    console.log(`${key}の音声ファイルの長さが0です`);
+                  }
+                };
+                
+                sound.addEventListener('canplaythrough', handleCanPlayThrough);
+                
+                // エラー処理
+                sound.addEventListener('error', (e) => {
+                  console.error(`${key}の音声ファイルの読み込みに失敗しました:`, e);
+                  resolve(false);
+                });
+
+                // タイムアウト処理
+                const timeout = setTimeout(() => {
+                  console.error(`${key}の音声ファイルの読み込みがタイムアウトしました`);
+                  resolve(false);
+                }, 10000); // 10秒でタイムアウト
+
+                // クリーンアップ
+                return () => {
+                  clearTimeout(timeout);
+                  sound.removeEventListener('canplaythrough', handleCanPlayThrough);
+                };
               })
           )
         );
 
-        // 音声ファイルをセット
-        setSoundFiles(sounds);
-        // 音声ファイルの読み込み状態をfalseにする
-        setIsLoading(false);
+        // すべての音声ファイルが正常に読み込まれたか確認
+        const allLoaded = loadResults.every(result => result === true);
+        
+        if (allLoaded) {
+          console.log('すべての音声ファイルの読み込みが完了しました');
+          globalSoundFiles = sounds;
+          isLoading = false;
+          isLoaded = true;
+          setLocalSoundFiles(sounds);
+          setLocalIsLoading(false);
+        } else {
+          console.error('一部の音声ファイルの読み込みに失敗しました');
+          error = '一部の音声ファイルの読み込みに失敗しました';
+          isLoading = false;
+          setLocalError('一部の音声ファイルの読み込みに失敗しました');
+          setLocalIsLoading(false);
+        }
       } catch (err) { 
-        // 音声ファイルの読み込みに失敗した場合
-        setError('音声ファイルの読み込みに失敗しました');
-        // 音声ファイルの読み込み状態をfalseにする
-        setIsLoading(false);
+        console.error('音声ファイルの読み込みに失敗しました:', err);
+        error = '音声ファイルの読み込みに失敗しました';
+        isLoading = false;
+        setLocalError('音声ファイルの読み込みに失敗しました');
+        setLocalIsLoading(false);
       }
     };
 
     // 音声ファイルの読み込みを開始 
     loadSounds();
-  }, [soundEnabled, questionVoice]);
+  }, []); // 依存配列を空にして、初回マウント時のみ実行
 
   /** 音声ファイルを再生する関数 */
   const playSound = (key: string) => {
     if (!soundEnabled) return;
 
-    const sound = soundFiles[key];
+    const sound = localSoundFiles[key];
     if (sound) {
       sound.currentTime = 0;
       sound.play().catch(error => {
@@ -102,9 +177,9 @@ export const useSoundLoader = () => {
   };
 
   return {
-    isLoading,
-    error,
+    isLoading: localIsLoading,
+    error: localError,
     playSound,
-    soundFiles
+    soundFiles: localSoundFiles
   };
 }; 

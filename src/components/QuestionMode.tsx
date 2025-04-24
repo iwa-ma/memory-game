@@ -239,39 +239,36 @@ export const QuestionMode = ({
       const countdownDuration = 1000; // 1秒間隔
       const initialDelay = 500; // 開始前の待機時間
 
-      const startCountdown = () => {
-        setCountdown(3);
-        playSound('3');
+      const startCountdown = async () => {
+        try {
+          setCountdown(3);
+          await playSound('3');
+          // 再生完了後、Promiseを使って、1秒待機
+          await new Promise(resolve => setTimeout(resolve, countdownDuration));
 
-        const timer1 = window.setTimeout(() => {
           setCountdown(2);
-          playSound('2');
-          
-          const timer2 = window.setTimeout(() => {
-            setCountdown(1);
-            playSound('1');
-            
-            const timer3 = window.setTimeout(() => {
-              setCountdown(0);
-              playSound('0');
-              
-              const timer4 = window.setTimeout(() => {
-                setCountdown('Start');
-                playSound('start');
-                
-                const timer5 = window.setTimeout(() => {
-                  setPhase('showing');
-                  setCountdown(3);
-                }, countdownDuration);
-                timers.push(timer5);
-              }, countdownDuration);
-              timers.push(timer4);
-            }, countdownDuration);
-            timers.push(timer3);
-          }, countdownDuration);
-          timers.push(timer2);
-        }, countdownDuration);
-        timers.push(timer1);
+          await playSound('2');
+          await new Promise(resolve => setTimeout(resolve, countdownDuration));
+
+          setCountdown(1);
+          await playSound('1');
+          await new Promise(resolve => setTimeout(resolve, countdownDuration));
+
+          setCountdown(0);
+          await playSound('0');
+          await new Promise(resolve => setTimeout(resolve, countdownDuration));
+
+          setCountdown('Start');
+          await playSound('start');
+          await new Promise(resolve => setTimeout(resolve, countdownDuration));
+
+          setPhase('showing');
+          setCountdown(3);
+        } catch (error) {
+          console.error('カウントダウン中にエラーが発生しました:', error);
+          // エラーが発生しても次のフェーズに進む
+          setPhase('showing');
+        }
       };
 
       // 初期待機時間を設定(3秒)
