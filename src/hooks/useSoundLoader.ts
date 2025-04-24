@@ -104,6 +104,7 @@ export const useSoundLoader = () => {
                   if (sound.duration > 0) {
                     console.log(`${key}の音声ファイルの長さ: ${sound.duration}秒`);
                     sound.removeEventListener('canplaythrough', handleCanPlayThrough);
+                    clearTimeout(timeout); // タイムアウトタイマーをクリア
                     resolve(true);
                   } else {
                     console.log(`${key}の音声ファイルの長さが0です`);
@@ -115,12 +116,14 @@ export const useSoundLoader = () => {
                 // エラー処理
                 sound.addEventListener('error', (e) => {
                   console.error(`${key}の音声ファイルの読み込みに失敗しました:`, e);
+                  clearTimeout(timeout); // タイムアウトタイマーをクリア
                   resolve(false);
                 });
 
                 // タイムアウト処理
                 const timeout = setTimeout(() => {
                   console.error(`${key}の音声ファイルの読み込みがタイムアウトしました`);
+                  sound.removeEventListener('canplaythrough', handleCanPlayThrough); // イベントリスナーを削除
                   resolve(false);
                 }, 10000); // 10秒でタイムアウト
 
