@@ -30,15 +30,27 @@ export const useSoundLoader = () => {
   /** 問題の音声 */
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
 
+  /** 状態を更新する関数 */
+  const updateState = (loading: boolean, soundFiles: SoundFiles = {}, err: string | null = null) => {
+    isLoading = loading;
+    isLoaded = !loading && err === null;
+    error = err;
+    globalSoundFiles = soundFiles;
+    
+    setLocalIsLoading(loading);
+    setLocalSoundFiles(soundFiles);
+    setLocalError(err);
+  };
+
   const loadSounds = async () => {
     // 音声が無効な場合は何もしない
     if (!soundEnabled) {
-      isLoading = false;
-      setLocalIsLoading(false);
+      updateState(false);
       return;
     }
 
     try {
+      updateState(true);
       const sounds: SoundFiles = {};
       
       // カウントダウンと開始音声
@@ -130,24 +142,14 @@ export const useSoundLoader = () => {
       
       if (allLoaded) {
         console.log('すべての音声ファイルの読み込みが完了しました');
-        globalSoundFiles = sounds;
-        isLoading = false;
-        isLoaded = true;
-        setLocalSoundFiles(sounds);
-        setLocalIsLoading(false);
+        updateState(false, sounds);
       } else {
         console.error('一部の音声ファイルの読み込みに失敗しました');
-        error = '一部の音声ファイルの読み込みに失敗しました';
-        isLoading = false;
-        setLocalError('一部の音声ファイルの読み込みに失敗しました');
-        setLocalIsLoading(false);
+        updateState(false, {}, '一部の音声ファイルの読み込みに失敗しました');
       }
     } catch (err) { 
       console.error('音声ファイルの読み込みに失敗しました:', err);
-      error = '音声ファイルの読み込みに失敗しました';
-      isLoading = false;
-      setLocalError('音声ファイルの読み込みに失敗しました');
-      setLocalIsLoading(false);
+      updateState(false, {}, '音声ファイルの読み込みに失敗しました');
     }
   };
 
@@ -206,9 +208,7 @@ export const useSoundLoader = () => {
       console.log('デバッグ情報:', debugInfo);
 
       previousVoice.current = questionVoice;
-      isLoading = true;
-      isLoaded = false;
-      setLocalIsLoading(true);
+      updateState(true);
       loadSounds();
     }
   }, [questionVoice]);
