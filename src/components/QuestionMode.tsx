@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { GameStatus } from '@/components/question/GameStatus';
 import { CountdownModal } from '@/components/question/CountdownModal';
@@ -8,6 +8,7 @@ import { ResultModal } from '@/components/question/ResultModal';
 import { generateSequence } from '@/utils/gameUtils';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
+import { useSoundLoader } from '@/hooks/useSoundLoader';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -50,8 +51,6 @@ type QuestionModeProps = {
   onScoreUpdate: (newScore: number) => void;
   /** ゲーム終了関数 */
   onGameEnd: () => void;
-  /** 音声の有効状態 */
-  soundEnabled: boolean;
 };
 
 /** 出題モードコンポーネント */
@@ -65,8 +64,7 @@ export const QuestionMode = ({
   onToggleHistory,
   onLevelUp,
   onScoreUpdate,
-  onGameEnd,
-  soundEnabled
+  onGameEnd
 }: QuestionModeProps) => {
   /** 音声の種類 */
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
@@ -82,115 +80,20 @@ export const QuestionMode = ({
   const [showResult, setShowResult] = useState(false);
   /** 正解かどうかの状態 */
   const [isCorrect, setIsCorrect] = useState(false);
+  /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
+  const [isSoundLoaded, setIsSoundLoaded] = useState(false);
 
-  /** 音声オブジェクトの参照を保持 */
-  const audioRef = useRef<{ [key: string]: HTMLAudioElement }>({});
+  /** 音声ローダー(実際の読み込み状態を表す) */
+  const { playSound, isLoading } = useSoundLoader();
 
-  /** 音声オブジェクトを初期化する関数 */
-  const initializeAudio = () => {
-    /** 音声の有効状態がtrueの場合 */
-    if (soundEnabled) {
-      let audioFiles;
-      /** 音声の種類がanimal1の場合 */
-      if (questionVoice === 'animal1') {
-        audioFiles = {
-          3: new Audio('/sounds/animal1/cat1.mp3'),
-          2: new Audio('/sounds/animal1/cat1.mp3'),
-          1: new Audio('/sounds/animal1/cat1.mp3'),
-          0: new Audio('/sounds/animal1/cat1.mp3'),
-          start: new Audio('/sounds/animal1/cat2.mp3'),
-          correct: new Audio('/sounds/correct.mp3'),
-          incorrect: new Audio('/sounds/incorrect.mp3')
-        };
-      } else {
-        /** 音声の種類がanimal1以外の場合 */
-        const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
-        audioFiles = {
-          3: new Audio(`/sounds/${voicePath}/3.mp3`),
-          2: new Audio(`/sounds/${voicePath}/2.mp3`),
-          1: new Audio(`/sounds/${voicePath}/1.mp3`),
-          0: new Audio(`/sounds/${voicePath}/0.mp3`),
-          start: new Audio(`/sounds/${voicePath}/start.mp3`),
-          correct: new Audio('/sounds/correct.mp3'),
-          incorrect: new Audio('/sounds/incorrect.mp3')
-        };
-      }
-      audioRef.current = audioFiles;
-    } else {
-      audioRef.current = {};
-    }
-  };
-
-  /** 音声を再生する関数 */
-  const playSound = (key: number | 'Start' | 'correct' | 'incorrect') => {
-    const soundKey = key.toString().toLowerCase();
-    const audio = audioRef.current[soundKey];
-    if (audio) {
-      // 再生中の音声を停止
-      audio.pause();
-      audio.currentTime = 0;
-      // 新しい再生を開始
-      audio.play().catch(error => {
-        // AbortErrorは無視（ユーザーがタブを切り替えた場合など）
-        if (error.name !== 'AbortError') {
-          console.error('音声の再生に失敗しました:', error);
-        }
-      });
-    }
-  };
-
-  /** 数字の音声を再生する関数 */
-  const playNumberSound = (number: number) => {
-    if (!soundEnabled) return;
-
-    let sound;
-    if (questionVoice === 'animal1') {
-      // animal1の場合、数字に応じて異なる音声を使用
-      switch (number) {
-        case 0:
-          sound = new Audio('/sounds/animal1/cat1.mp3');
-          break;
-        case 1:
-          sound = new Audio('/sounds/animal1/cat2.mp3');
-          break;
-        case 2:
-          sound = new Audio('/sounds/animal1/cat3.mp3');
-          break;
-        case 3:
-          sound = new Audio('/sounds/animal1/cat4.mp3');
-          break;
-        default:
-          return;
-      }
-    } else {
-      // その他の音声オプションの場合
-      const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
-      sound = new Audio(`/sounds/${voicePath}/${number}.mp3`);
-    }
-
-    if (sound) {
-      sound.play().catch(error => {
-        console.error('音声の再生に失敗しました:', error);
-      });
-    }
-  };
-
-  // soundEnabledまたはquestionVoiceが変更されたときに音声オブジェクトを初期化
+  // 音声ファイルの読み込み状態を監視
   useEffect(() => {
-    initializeAudio();
-  }, [soundEnabled, questionVoice]);
+    if (!isLoading) {
+      setIsSoundLoaded(true);
+    }
+  }, [isLoading]);
 
-  // コンポーネントのアンマウント時に音声をクリーンアップ
-  useEffect(() => {
-    return () => {
-      Object.values(audioRef.current).forEach(audio => {
-        audio.pause();
-        audio.currentTime = 0;
-      });
-    };
-  }, []);
-
-  // 初期マウント時の問題生成
+  // 初回マウント時の問題生成
   useEffect(() => {
     if (phase === 'ready' && sequence.length === 0) {
       handleGenerateSequence();
@@ -220,7 +123,24 @@ export const QuestionMode = ({
     const isAnswerCorrect = input === sequence[currentAnswerIndex];
 
     // 押したボタンの音声を再生
-    playNumberSound(input);
+    if (questionVoice === 'animal1') {
+      switch (input) {
+        case 0:
+          playSound('cat1');
+          break;
+        case 1:
+          playSound('cat2');
+          break;
+        case 2:
+          playSound('cat3');
+          break;
+        case 3:
+          playSound('cat4');
+          break;
+      }
+    } else {
+      playSound(`num${input}`);
+    }
 
     if (!isAnswerCorrect) {
       // 不正解の場合
@@ -243,65 +163,6 @@ export const QuestionMode = ({
     }
   };
 
-  /** 音声を再生して完了を待機する関数 */
-  const playSoundAndWait = async (number: number, showDuration: number, extraShowDuration: number): Promise<void> => {
-    return new Promise(resolve => {
-      // 音声オブジェクトを再利用
-      let sound = audioRef.current[number];
-      if (!sound) {
-        // 音声オブジェクトが存在しない場合のみ新規作成
-        if (questionVoice === 'animal1') {
-          switch (number) {
-            case 0:
-              sound = new Audio('/sounds/animal1/cat1.mp3');
-              break;
-            case 1:
-              sound = new Audio('/sounds/animal1/cat2.mp3');
-              break;
-            case 2:
-              sound = new Audio('/sounds/animal1/cat3.mp3');
-              break;
-            case 3:
-              sound = new Audio('/sounds/animal1/cat4.mp3');
-              break;
-            default:
-              resolve();
-              return;
-          }
-        } else {
-          const voicePath = questionVoice === 'human1' ? 'human1' : 'human2';
-          sound = new Audio(`/sounds/${voicePath}/${number}.mp3`);
-        }
-        // 作成した音声オブジェクトを保存
-        audioRef.current[number] = sound;
-      }
-
-      if (sound) {
-        // 既存の音声を停止
-        sound.pause();
-        sound.currentTime = 0;
-
-        // 音声の再生が完了するまで待機
-        sound.onended = () => {
-          resolve();
-        };
-        
-        // 音声を再生
-        sound.play().catch(error => {
-          console.error('音声の再生に失敗しました:', error);
-          resolve();
-        });
-        
-        // 音声の再生が終了しない場合のタイムアウト
-        setTimeout(() => {
-          resolve();
-        }, showDuration + extraShowDuration);
-      } else {
-        resolve();
-      }
-    });
-  };
-
   /** 数字を順番に光らせる処理 */
   useEffect(() => {
     // showingフェーズで、出題数字が存在する場合に実行
@@ -321,20 +182,41 @@ export const QuestionMode = ({
             // animal1の場合で、iが2の時(音声が長い：ニャウ～ン)は表示時間を長くする
             const extraShowDuration = (questionVoice === 'animal1' && i === 2) ? 5000 : 0;
             
-            // 音声の再生が完了するまで待機
-            await playSoundAndWait(sequence[i], showDuration, extraShowDuration);
+            // 音声を再生
+            if (questionVoice === 'animal1') {
+              switch (sequence[i]) {
+                case 0:
+                  playSound('cat1');
+                  break;
+                case 1:
+                  playSound('cat2');
+                  break;
+                case 2:
+                  playSound('cat3');
+                  break;
+                case 3:
+                  playSound('cat4');
+                  break;
+              }
+            } else {
+              playSound(`num${sequence[i]}`);
+            }
             
-            setCurrentIndex(-1);  // ボタンを消灯消す(NumberPad.tsxで該当Indexのボタン色変更)
+            // 表示時間を待機
+            await new Promise(resolve => setTimeout(resolve, showDuration + extraShowDuration));
+            
+            // ボタンを消灯
+            setCurrentIndex(-1);
             
             // 次の数字まで待機（最後の数字の場合は待機しない）
             if (i < sequence.length - 1) {
               await new Promise(resolve => setTimeout(resolve, intervalDuration));
             }
           }
-          setPhase('answering');
         } catch (error) {
           console.error('シーケンス表示中にエラーが発生しました:', error);
-          // エラーが発生した場合でも次のフェーズに進む
+        } finally {
+          // エラーが発生しても次のフェーズに進む
           setPhase('answering');
         }
       };
@@ -346,7 +228,8 @@ export const QuestionMode = ({
   useEffect(() => {
     let timers: number[] = [];
 
-    if (phase === 'ready') {
+    // 音声ファイルの読み込みが完了した場合に実行
+    if (phase === 'ready' && isSoundLoaded) {
       // 問題生成（初回マウント時のみ）
       if (sequence.length === 0) {
         handleGenerateSequence();
@@ -358,23 +241,23 @@ export const QuestionMode = ({
 
       const startCountdown = () => {
         setCountdown(3);
-        playSound(3);
+        playSound('3');
 
         const timer1 = window.setTimeout(() => {
           setCountdown(2);
-          playSound(2);
+          playSound('2');
           
           const timer2 = window.setTimeout(() => {
             setCountdown(1);
-            playSound(1);
+            playSound('1');
             
             const timer3 = window.setTimeout(() => {
               setCountdown(0);
-              playSound(0);
+              playSound('0');
               
               const timer4 = window.setTimeout(() => {
                 setCountdown('Start');
-                playSound('Start');
+                playSound('start');
                 
                 const timer5 = window.setTimeout(() => {
                   setPhase('showing');
@@ -399,14 +282,9 @@ export const QuestionMode = ({
       return () => {
         // タイマーをクリア
         timers.forEach(timer => clearTimeout(timer));
-        // 音声をクリーンアップ
-        Object.values(audioRef.current).forEach(audio => {
-          audio.pause();
-          audio.currentTime = 0;
-        });
       };
     }
-  }, [phase, sequence.length]);
+  }, [phase, sequence.length, isSoundLoaded]);
 
   /** 結果表示モーダルで「次のレベルへ」クリック処理 */
   const handleContinue = () => {
