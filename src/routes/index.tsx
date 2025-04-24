@@ -65,6 +65,8 @@ function App() {
   const [level, setLevel] = useState(startLevel);
   /** スコア管理 */
   const [score, setScore] = useState(0);
+  /** 設定モーダルの表示状態 */
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const { isLoading, error } = useSoundLoader();
 
@@ -139,6 +141,9 @@ function App() {
           <WaitingMode 
             onStart={handleStartGame} 
             level={level}
+            isSettingsOpen={isSettingsOpen}
+            onSettingsOpen={() => setIsSettingsOpen(true)}
+            onSettingsClose={() => setIsSettingsOpen(false)}
           />
         )}
       </header>

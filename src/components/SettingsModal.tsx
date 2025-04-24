@@ -138,7 +138,8 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   };
 
   return (
-    <ModalOverlay>
+    // モーダルオーバーレイをクリックした時にモーダルを閉じないようにする
+    <ModalOverlay onClick={(e) => e.stopPropagation()}>
       <ModalContent>
         <h2>設定変更</h2>
         <SettingsSection>
