@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import { SettingsModal } from './SettingsModal';
+import { useSoundLoader } from '@/hooks/useSoundLoader';
 
 /** index.tsxから受け取るProps型 */
 type WaitingModeProps = {
@@ -9,6 +9,12 @@ type WaitingModeProps = {
   onStart: () => void;
   /** レベル管理 */
   level: number;
+  /** 設定モーダルの表示状態 */
+  isSettingsOpen: boolean;
+  /** 設定モーダルを開く関数 */
+  onSettingsOpen: () => void;
+  /** 設定モーダルを閉じる関数 */
+  onSettingsClose: () => void;
 };
 
 /** スタートボタンのスタイル */
@@ -28,6 +34,11 @@ const StartButton = styled(motion.button)`
   &:hover {
     background-color: #45a049;
   }
+
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
 `;
 
 /** 設定変更ボタンのスタイル */
@@ -45,6 +56,11 @@ const SettingsButton = styled(motion.button)`
 
   &:hover {
     background-color: #1976D2;
+  }
+
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
   }
 `;
 
@@ -73,9 +89,17 @@ const ButtonContainer = styled.div`
 `;
 
 /** スタート待機モードコンポーネント */
-export const WaitingMode = ({ onStart, level }: WaitingModeProps) => {
-  /** 設定変更モーダルの表示状態 */
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+export const WaitingMode = ({ 
+  onStart, 
+  level, 
+  isSettingsOpen, 
+  onSettingsOpen, 
+  onSettingsClose 
+}: WaitingModeProps) => {
+  const { isLoading } = useSoundLoader();
+
+  // 設定変更時のみローディング状態を表示
+  const showLoading = isLoading && isSettingsOpen;
 
   return (
     <div>
@@ -92,18 +116,20 @@ export const WaitingMode = ({ onStart, level }: WaitingModeProps) => {
             ease: "easeInOut"
           }}
           onClick={onStart}
+          disabled={showLoading}
         >
-          ゲームスタート
+          {showLoading ? '読み込み中...' : 'ゲームスタート'}
         </StartButton>
         <SettingsButton
-          onClick={() => setIsSettingsOpen(true)}
+          onClick={onSettingsOpen}
+          disabled={showLoading}
         >
-          設定変更
+          {showLoading ? '読み込み中...' : '設定変更'}
         </SettingsButton>
       </ButtonContainer>
       <SettingsModal 
         isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        onClose={onSettingsClose}
       />
     </div>
   );

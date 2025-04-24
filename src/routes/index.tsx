@@ -6,6 +6,8 @@ import type { RootState } from '@/store/store'
 import '@/App.css'
 import { WaitingMode } from '@/components/WaitingMode';
 import { QuestionMode } from '@/components/QuestionMode';
+import { useSoundLoader } from '@/hooks/useSoundLoader';
+import styled from 'styled-components';
 
 export const Route = createFileRoute('/')({
   component: () => (
@@ -15,9 +17,38 @@ export const Route = createFileRoute('/')({
   ),
 })
 
+/** 音声ファイル読み込み中のスタイル */
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #282c34;
+  color: #61dafb;
+`;
+
+/** 音声ファイル読み込み中のテキスト */
+const LoadingText = styled.h2`
+  margin: 1rem 0;
+`;
+
+/** 音声ファイル読み込み中のスピナー */
+const LoadingSpinner = styled.div`
+  width: 50px;
+  height: 50px;
+  border: 5px solid #61dafb;
+  border-top: 5px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
 function App() {
-  /** 音声の有効状態 */
-  const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
   /** 開始レベル */
   const startLevel = useSelector((state: RootState) => state.settings.startLevel);
   /** 音声の種類 */
@@ -34,6 +65,19 @@ function App() {
   const [level, setLevel] = useState(startLevel);
   /** スコア管理 */
   const [score, setScore] = useState(0);
+  /** 設定モーダルの表示状態 */
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  /** 初回読み込みフラグ */
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  const { isLoading, error } = useSoundLoader();
+
+  // 初回読み込み完了時にフラグを更新
+  useEffect(() => {
+    if (!isLoading && isInitialLoad) {
+      setIsInitialLoad(false);
+    }
+  }, [isLoading]);
 
   // startLevelが変更されたときにlevelを更新
   useEffect(() => {
@@ -77,6 +121,25 @@ function App() {
     setScore(0);  // スコアもリセット
   };
 
+  /** 音声ファイル読み込み中の表示 */
+  if (isLoading && isInitialLoad) {
+    return (
+      <LoadingContainer>
+        <LoadingText>音声ファイルを読み込み中...</LoadingText>
+        <LoadingSpinner />
+      </LoadingContainer>
+    );
+  }
+
+  /** 音声ファイル読み込みに失敗した場合の表示 */
+  if (error) {
+    return (
+      <LoadingContainer>
+        <LoadingText>{error}</LoadingText>
+      </LoadingContainer>
+    );
+  }
+
   return (
     <div className="App">
       <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
@@ -87,6 +150,9 @@ function App() {
           <WaitingMode 
             onStart={handleStartGame} 
             level={level}
+            isSettingsOpen={isSettingsOpen}
+            onSettingsOpen={() => setIsSettingsOpen(true)}
+            onSettingsClose={() => setIsSettingsOpen(false)}
           />
         )}
       </header>
@@ -105,7 +171,6 @@ function App() {
             onLevelUp={handleLevelUp}
             onScoreUpdate={handleScoreUpdate}
             onGameEnd={handleGameEnd}
-            soundEnabled={soundEnabled}
           />
         )}
       </div>
