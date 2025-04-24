@@ -7,6 +7,7 @@ import {
   setStartLevel,
   setDifficultyLevel,
 } from '@/store/settingsSlice';
+import { useSoundLoader } from '@/hooks/useSoundLoader';
 
 /** モーダルオーバーレイのスタイル */
 const ModalOverlay = styled.div`
@@ -126,8 +127,15 @@ interface SettingsModalProps {
 export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   const dispatch = useDispatch();
   const settings = useSelector((state: RootState) => state.settings);
+  const { isLoading: isSoundLoading } = useSoundLoader();
 
   if (!isOpen) return null;
+
+  const handleClose = () => {
+    if (!isSoundLoading) {
+      onClose();
+    }
+  };
 
   return (
     <ModalOverlay>
@@ -138,11 +146,13 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <StyledSelect
             value={settings.questionVoice}
             onChange={(e) => dispatch(setQuestionVoice(e.target.value as 'human1' | 'human2' | 'animal1'))}
+            disabled={isSoundLoading}
           >
             <option value="human1">音声1</option>
             <option value="human2">音声2</option>
             <option value="animal1">猫</option>
           </StyledSelect>
+          {isSoundLoading && <p>音声を読み込み中...</p>}
         </SettingsSection>
 
         <SettingsSection>
@@ -155,6 +165,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                 value="on"
                 checked={settings.soundEnabled}
                 onChange={() => dispatch(setSoundEnabled(true))}
+                disabled={isSoundLoading}
               />
               オン
             </label>
@@ -165,6 +176,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                 value="off"
                 checked={!settings.soundEnabled}
                 onChange={() => dispatch(setSoundEnabled(false))}
+                disabled={isSoundLoading}
               />
               オフ
             </label>
@@ -176,6 +188,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <StyledSelect
             value={settings.startLevel}
             onChange={(e) => dispatch(setStartLevel(Number(e.target.value)))}
+            disabled={isSoundLoading}
           >
             {[...Array(10)].map((_, i) => (
               <option key={i + 1} value={i + 1}>
@@ -190,6 +203,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
           <StyledSelect
             value={settings.difficultyLevel}
             onChange={(e) => dispatch(setDifficultyLevel(e.target.value as 'easy' | 'normal' | 'hard'))}
+            disabled={isSoundLoading}
           >
             <option value="easy">簡単</option>
             <option value="normal">普通</option>
@@ -198,7 +212,9 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
         </SettingsSection>
 
         <ModalActions>
-          <button onClick={onClose}>閉じる</button>
+          <button onClick={handleClose} disabled={isSoundLoading}>
+            {isSoundLoading ? '読み込み中...' : '閉じる'}
+          </button>
         </ModalActions>
       </ModalContent>
     </ModalOverlay>
