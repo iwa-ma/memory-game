@@ -211,7 +211,11 @@ export const useSoundLoader = () => {
       soundState: sound.readyState,
       currentTime: sound.currentTime,
       duration: sound.duration,
-      soundError: sound.error
+      soundError: sound.error,
+      loaded: sound.readyState === 4,
+      paused: sound.paused,
+      ended: sound.ended,
+      src: sound.src
     }, null, 2));
 
     const duration = localSoundDurations[soundName] || 0;
@@ -224,7 +228,11 @@ export const useSoundLoader = () => {
           soundState: sound.readyState,
           currentTime: sound.currentTime,
           duration: sound.duration,
-          soundError: sound.error
+          soundError: sound.error,
+          loaded: sound.readyState === 4,
+          paused: sound.paused,
+          ended: sound.ended,
+          src: sound.src
         }, null, 2));
         sound.removeEventListener('error', handleError);
         sound.removeEventListener('ended', handleEnded);
