@@ -197,9 +197,9 @@ export const QuestionMode = ({
                 soundName = `num${sequence[i]}`;
               }
 
-              // 音声の長さに余裕を持たせる（0.5秒）
-              const displayDuration = (getSoundDuration(soundName) * 1000) + 500;
-              
+              // 音声の待機時間を計算(音声の長さを1000倍してミリ秒に変換 + バッファで0.3秒)
+              const displayDuration = (getSoundDuration(soundName) * 1000) + 300;
+
               // 音声の再生と表示時間の待機を同時に開始
               await Promise.all([
                 playSound(soundName),
