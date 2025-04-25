@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { getAudioDuration } from '@/utils/audioUtils';
+import { isMobileDevice } from '@/utils/deviceUtils';
 
 type SoundFiles = {
   [key: string]: HTMLAudioElement;
@@ -197,21 +198,65 @@ export const useSoundLoader = () => {
     // 音声ファイルが読み込まれていない場合はエラー
     if (!isLoaded) {
       console.warn('音声ファイルが読み込まれていません');
-      return { duration: 0 };
+      throw new Error('音声ファイルが読み込まれていません');
     }
 
     const sound = localSoundFiles[soundName];
     if (!sound) {
       console.warn(`音声ファイルが見つかりません: ${soundName}`);
-      return { duration: 0 };
+      throw new Error(`音声ファイルが見つかりません: ${soundName}`);
     }
 
     const duration = localSoundDurations[soundName] || 0;
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      // 音声再生の成功/失敗を検知するためのイベントリスナー
+      const handleError = (error: Event) => {
+        console.error(`音声の再生に失敗しました: ${soundName}`, error);
+        sound.removeEventListener('error', handleError);
+        sound.removeEventListener('ended', handleEnded);
+        reject(error);
+      };
+
+      const handleEnded = () => {
+        sound.removeEventListener('error', handleError);
+        sound.removeEventListener('ended', handleEnded);
+        resolve({ duration });
+      };
+
+      // イベントリスナーを設定
+      sound.addEventListener('error', handleError);
+      sound.addEventListener('ended', handleEnded);
+
+      // 音声を再生
       sound.currentTime = 0;
-      sound.play();
-      sound.onended = () => resolve({ duration });
+      
+      // モバイルデバイスとPCで処理を分ける
+      if (isMobileDevice()) {
+        // モバイルデバイスの場合
+        const playPromise = sound.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            // NotAllowedErrorの場合、ユーザーに許可を求める
+            if (error.name === 'NotAllowedError') {
+              console.warn('音声再生の許可が必要です。ユーザーインタラクションを待機します。');
+              // ユーザーインタラクションを待機
+              document.addEventListener('click', function handleClick() {
+                document.removeEventListener('click', handleClick);
+                sound.play().catch(handleError);
+              }, { once: true });
+            } else {
+              handleError(error);
+            }
+          });
+        }
+      } else {
+        // PCの場合
+        const playPromise = sound.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(handleError);
+        }
+      }
     });
   };
 
