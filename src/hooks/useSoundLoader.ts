@@ -207,18 +207,32 @@ export const useSoundLoader = () => {
       throw new Error(`音声ファイルが見つかりません: ${soundName}`);
     }
 
+    console.log(`音声再生を開始: ${soundName}`, JSON.stringify({
+      soundState: sound.readyState,
+      currentTime: sound.currentTime,
+      duration: sound.duration,
+      soundError: sound.error
+    }, null, 2));
+
     const duration = localSoundDurations[soundName] || 0;
 
     return new Promise((resolve, reject) => {
       // 音声再生の成功/失敗を検知するためのイベントリスナー
       const handleError = (error: Event) => {
-        console.error(`音声の再生に失敗しました: ${soundName}`, error);
+        console.error(`音声の再生に失敗しました: ${soundName}`, JSON.stringify({
+          error: error.toString(),
+          soundState: sound.readyState,
+          currentTime: sound.currentTime,
+          duration: sound.duration,
+          soundError: sound.error
+        }, null, 2));
         sound.removeEventListener('error', handleError);
         sound.removeEventListener('ended', handleEnded);
         reject(error);
       };
 
       const handleEnded = () => {
+        console.log(`音声再生が完了: ${soundName}`);
         sound.removeEventListener('error', handleError);
         sound.removeEventListener('ended', handleEnded);
         resolve({ duration });
@@ -234,14 +248,17 @@ export const useSoundLoader = () => {
       // モバイルデバイスとPCで処理を分ける
       if (isMobileDevice()) {
         // モバイルデバイスの場合
+        console.log('モバイルデバイスで音声を再生します');
         const playPromise = sound.play();
         if (playPromise !== undefined) {
           playPromise.catch((error) => {
+            console.error('モバイルデバイスでの音声再生に失敗:', error);
             // NotAllowedErrorの場合、ユーザーに許可を求める
             if (error.name === 'NotAllowedError') {
               console.warn('音声再生の許可が必要です。ユーザーインタラクションを待機します。');
               // ユーザーインタラクションを待機
               document.addEventListener('click', function handleClick() {
+                console.log('ユーザーインタラクションを検出、音声再生を再試行');
                 document.removeEventListener('click', handleClick);
                 sound.play().catch(handleError);
               }, { once: true });
@@ -252,9 +269,13 @@ export const useSoundLoader = () => {
         }
       } else {
         // PCの場合
+        console.log('PCで音声を再生します');
         const playPromise = sound.play();
         if (playPromise !== undefined) {
-          playPromise.catch(handleError);
+          playPromise.catch((error) => {
+            console.error('PCでの音声再生に失敗:', error);
+            handleError(error);
+          });
         }
       }
     });
