@@ -164,7 +164,6 @@ function App() {
         {gameMode === 'waiting' && (
           <WaitingMode 
             onStart={handleStartGame} 
-            level={level}
             isSettingsOpen={isSettingsOpen}
             onSettingsOpen={() => setIsSettingsOpen(true)}
             onSettingsClose={() => setIsSettingsOpen(false)}
