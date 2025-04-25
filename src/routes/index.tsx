@@ -152,14 +152,19 @@ function App() {
     <div className="App">
       <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
         <h1>記憶ゲーム</h1>
-        <p>一緒に記憶力を試してみましょう！</p>
-        <SoundNotice>
-          ゲーム中音声が流れます。設定変更で音声がでないようにできます。
-        </SoundNotice>
+        {gameMode === 'waiting' && (
+          <>
+            <p>一緒に記憶力を試してみましょう！</p>
+            <SoundNotice>
+              ゲーム中音声が流れます。設定変更で音声がでないようにできます。
+            </SoundNotice>
+          </>
+        )}
         {/* スタートボタン waitingモードで表示 */}
         {gameMode === 'waiting' && (
           <WaitingMode 
             onStart={handleStartGame} 
+            level={level}
             isSettingsOpen={isSettingsOpen}
             onSettingsOpen={() => setIsSettingsOpen(true)}
             onSettingsClose={() => setIsSettingsOpen(false)}
