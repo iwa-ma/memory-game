@@ -48,6 +48,14 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+/** 音声に関する注意書き */
+const SoundNotice = styled.p`
+  font-size: 0.9em;
+  color: #61dafb;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+`;
+
 function App() {
   /** 開始レベル */
   const startLevel = useSelector((state: RootState) => state.settings.startLevel);
@@ -145,6 +153,9 @@ function App() {
       <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
         <h1>記憶ゲーム</h1>
         <p>一緒に記憶力を試してみましょう！</p>
+        <SoundNotice>
+          ゲーム中音声が流れます。設定変更で音声がでないようにできます。
+        </SoundNotice>
         {/* スタートボタン waitingモードで表示 */}
         {gameMode === 'waiting' && (
           <WaitingMode 
