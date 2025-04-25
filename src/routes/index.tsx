@@ -143,8 +143,8 @@ function App() {
   return (
     <div className="App">
       <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
-        <h1>Memory Game</h1>
-        <p>Test your memory with this fun card matching game!</p>
+        <h1>記憶ゲーム</h1>
+        <p>一緒に記憶力を試してみましょう！</p>
         {/* スタートボタン waitingモードで表示 */}
         {gameMode === 'waiting' && (
           <WaitingMode 
