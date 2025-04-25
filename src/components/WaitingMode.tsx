@@ -7,8 +7,6 @@ import { useSoundLoader } from '@/hooks/useSoundLoader';
 type WaitingModeProps = {
   /** ゲームスタートボタンクリック動作関数 */
   onStart: () => void;
-  /** レベル管理 */
-  level: number;
   /** 設定モーダルの表示状態 */
   isSettingsOpen: boolean;
   /** 設定モーダルを開く関数 */
@@ -64,13 +62,6 @@ const SettingsButton = styled(motion.button)`
   }
 `;
 
-/** レベル表示のスタイル */
-const LevelDisplay = styled.div`
-  font-size: 1.5rem;
-  color: #61dafb;
-  margin-bottom: 1rem;
-`;
-
 /** ボタンコンテナのスタイル */
 const ButtonContainer = styled.div`
   display: flex;
@@ -91,7 +82,6 @@ const ButtonContainer = styled.div`
 /** スタート待機モードコンポーネント */
 export const WaitingMode = ({ 
   onStart, 
-  level, 
   isSettingsOpen, 
   onSettingsOpen, 
   onSettingsClose 
@@ -103,7 +93,6 @@ export const WaitingMode = ({
 
   return (
     <div>
-      <LevelDisplay>Level: {level}</LevelDisplay>
       <ButtonContainer>
         <StartButton
           animate={{

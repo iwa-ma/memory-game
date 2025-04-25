@@ -48,6 +48,14 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+/** 音声に関する注意書き */
+const SoundNotice = styled.p`
+  font-size: 0.9em;
+  color: #61dafb;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+`;
+
 function App() {
   /** 開始レベル */
   const startLevel = useSelector((state: RootState) => state.settings.startLevel);
@@ -93,7 +101,7 @@ function App() {
 
   /** レベルアップ処理 */
   const handleLevelUp = () => {
-    setLevel(prev => prev + 1);
+    setLevel((prev: number) => prev + 1);
     setInputHistory([]);
   };
 
@@ -143,13 +151,15 @@ function App() {
   return (
     <div className="App">
       <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
-        <h1>Memory Game</h1>
-        <p>Test your memory with this fun card matching game!</p>
+        <h1>記憶ゲーム</h1>
+        <p>一緒に記憶力を試してみましょう！</p>
+        <SoundNotice>
+          ゲーム中音声が流れます。設定変更で音声がでないようにできます。
+        </SoundNotice>
         {/* スタートボタン waitingモードで表示 */}
         {gameMode === 'waiting' && (
           <WaitingMode 
             onStart={handleStartGame} 
-            level={level}
             isSettingsOpen={isSettingsOpen}
             onSettingsOpen={() => setIsSettingsOpen(true)}
             onSettingsClose={() => setIsSettingsOpen(false)}
