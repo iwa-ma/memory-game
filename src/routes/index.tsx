@@ -93,7 +93,7 @@ function App() {
 
   /** レベルアップ処理 */
   const handleLevelUp = () => {
-    setLevel(prev => prev + 1);
+    setLevel((prev: number) => prev + 1);
     setInputHistory([]);
   };
 
