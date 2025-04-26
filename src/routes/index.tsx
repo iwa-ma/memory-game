@@ -7,6 +7,7 @@ import '@/App.css'
 import { WaitingMode } from '@/components/WaitingMode';
 import { QuestionMode } from '@/components/QuestionMode';
 import { useSoundLoader } from '@/hooks/useSoundLoader';
+import { isMobileDevice } from '@/utils/deviceUtils';
 import styled from 'styled-components';
 
 export const Route = createFileRoute('/')({
@@ -78,7 +79,7 @@ function App() {
   /** 初回読み込みフラグ */
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const { isLoading, error } = useSoundLoader();
+  const { isLoading, error, playSound } = useSoundLoader();
 
   // 初回読み込み完了時にフラグを更新
   useEffect(() => {
@@ -86,6 +87,19 @@ function App() {
       setIsInitialLoad(false);
     }
   }, [isLoading]);
+
+  /** 音声再生の準備を行う関数 */
+  const prepareAudio = async () => {
+    // モバイル端末の場合のみ音声の準備を行う
+    if (isMobileDevice()) {
+      try {
+        // 音声の準備（実際には再生せず、準備だけ行う）
+        await playSound('3');
+      } catch (error) {
+        console.warn('音声の準備に失敗しました:', error);
+      }
+    }
+  };
 
   // startLevelが変更されたときにlevelを更新
   useEffect(() => {
@@ -122,7 +136,13 @@ function App() {
    * ゲームスタートボタンがクリックされたときに呼び出される関数
    * 出題モートに移行する。
   */
-  const handleStartGame = () => {
+  const handleStartGame = async () => {
+    // 音声の準備を行う
+    try {
+      await prepareAudio();
+    } catch (error) {
+      console.warn('音声の準備に失敗しました:', error);
+    }
     setGameMode('question');
     setInputHistory([]);
     setLevel(startLevel);  // レベルをstartLevelにリセット
