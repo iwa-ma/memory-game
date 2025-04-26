@@ -6,6 +6,7 @@ import { NumberPad } from '@/components/question/NumberPad';
 import { InputHistory } from '@/components/question/InputHistory';
 import { ResultModal } from '@/components/question/ResultModal';
 import { generateSequence } from '@/utils/gameUtils';
+import { isMobileDevice } from '@/utils/deviceUtils';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { useSoundLoader } from '@/hooks/useSoundLoader';
@@ -82,6 +83,8 @@ export const QuestionMode = ({
   const [isCorrect, setIsCorrect] = useState(false);
   /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
+  /** 音声再生の準備状態 */
+  const [isAudioReady, setIsAudioReady] = useState(false);
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -97,6 +100,7 @@ export const QuestionMode = ({
   useEffect(() => {
     if (phase === 'ready' && sequence.length === 0) {
       handleGenerateSequence();
+      prepareAudio();
     }
   }, []);
 
@@ -115,6 +119,7 @@ export const QuestionMode = ({
     setCountdown(3);
     handleGenerateSequence();
     setPhase('ready');
+    setIsAudioReady(false);
   };
 
   /** 問題生成処理 */
@@ -123,6 +128,25 @@ export const QuestionMode = ({
     const newSequence = generateSequence(level, numbers.length);
     setSequence(newSequence);
     return newSequence;
+  };
+
+  /** 音声再生の準備を行う関数 */
+  const prepareAudio = async () => {
+    // モバイル端末の場合のみ音声の準備を行う
+    if (isMobileDevice()) {
+      try {
+        // 音声の準備（実際には再生せず、準備だけ行う）
+        await playSound('3');
+        setIsAudioReady(true);
+      } catch (error) {
+        console.warn('音声の準備に失敗しました:', error);
+        // エラーが発生しても準備完了として扱う
+        setIsAudioReady(true);
+      }
+    } else {
+      // モバイル端末以外の場合は準備完了として扱う
+      setIsAudioReady(true);
+    }
   };
 
   /** 解答を検証する関数 */
@@ -239,8 +263,8 @@ export const QuestionMode = ({
 
   // 初回マウントとリセット時のカウントダウン処理を統一
   useEffect(() => {
-    // 音声ファイルの読み込みが完了した場合に実行
-    if (phase === 'ready' && isSoundLoaded) {
+    // 音声ファイルの読み込みが完了し、かつ音声再生の準備ができている場合に実行
+    if (phase === 'ready' && isSoundLoaded && isAudioReady) {
       // 問題生成（初回マウント時のみ）
       if (sequence.length === 0) {
         handleGenerateSequence();
@@ -297,7 +321,7 @@ export const QuestionMode = ({
       // 音声ファイルの読み込みが完了したらすぐにカウントダウンを開始
       startCountdown();
     }
-  }, [phase, sequence.length, isSoundLoaded]);
+  }, [phase, sequence.length, isSoundLoaded, isAudioReady]);
 
   /** 結果表示モーダルで「次のレベルへ」クリック処理 */
   const handleContinue = () => {
