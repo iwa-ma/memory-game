@@ -94,7 +94,9 @@ function App() {
     if (isMobileDevice()) {
       try {
         // 音声の準備（実際には再生せず、準備だけ行う）
-        await playSound('3');
+        const audio = new Audio();
+        audio.src = '/sounds/3.mp3';
+        await audio.load();
       } catch (error) {
         console.warn('音声の準備に失敗しました:', error);
       }
