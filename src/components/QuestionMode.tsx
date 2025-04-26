@@ -371,12 +371,6 @@ export const QuestionMode = ({
         <CountdownModal level={level} countdown={countdown} />
       )}
 
-      {/* 出題フェーズの表示（音声の種類で表示内容を変える） */}
-      {phase === 'showing' && (
-        <Instruction>
-          <h3>{questionVoice === 'animal1' ? '光る鳴き声をよく見ていてください' : '光る数字をよく見ていてください'}</h3>
-        </Instruction>
-      )}
 
       {/* 解答フェーズの表示 */}
       {phase === 'answering' && (
