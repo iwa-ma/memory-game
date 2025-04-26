@@ -79,7 +79,7 @@ function App() {
   /** 初回読み込みフラグ */
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const { isLoading, error, playSound } = useSoundLoader();
+  const { isLoading, error } = useSoundLoader();
 
   // 初回読み込み完了時にフラグを更新
   useEffect(() => {
