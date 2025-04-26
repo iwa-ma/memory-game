@@ -136,7 +136,9 @@ export const QuestionMode = ({
     if (isMobileDevice()) {
       try {
         // 音声の準備（実際には再生せず、準備だけ行う）
-        await playSound('3');
+        const audio = new Audio();
+        audio.src = '/sounds/3.mp3';
+        await audio.load();
         setIsAudioReady(true);
       } catch (error) {
         console.warn('音声の準備に失敗しました:', error);
