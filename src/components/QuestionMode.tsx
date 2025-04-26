@@ -100,6 +100,13 @@ export const QuestionMode = ({
     }
   }, []);
 
+  // levelが変更されたときに問題を生成
+  useEffect(() => {
+    if (phase === 'preparing') {
+      handleGenerateSequence();
+    }
+  }, [level]);
+
   /** デバッグ用：ゲームをリセットする処理 */
   const handleReset = () => {
     setPhase('preparing');
@@ -112,6 +119,7 @@ export const QuestionMode = ({
 
   /** 問題生成処理 */
   const handleGenerateSequence = () => {
+    // 現在のレベルを使用して問題を生成
     const newSequence = generateSequence(level, numbers.length);
     setSequence(newSequence);
     return newSequence;
@@ -305,8 +313,6 @@ export const QuestionMode = ({
     setCountdown(3);
     // レベルアップ
     onLevelUp();
-    // 問題を生成
-    handleGenerateSequence();
     // 出題準備フェーズに移行
     setPhase('ready');
   };
