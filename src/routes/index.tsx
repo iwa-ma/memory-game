@@ -62,6 +62,8 @@ function App() {
   const startLevel = useSelector((state: RootState) => state.settings.startLevel);
   /** 音声の種類 */
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
+  /** 難易度 */
+  const difficultyLevel = useSelector((state: RootState) => state.settings.difficultyLevel);
   /** 数字ボタンの表示数設定(animal1の場合は4、それ以外の場合は10)  */
   const numbers = Array.from({ length: questionVoice === 'animal1' ? 4 : 10 }, (_, i) => i);
   /** 入力履歴の表示状態 */
@@ -74,6 +76,19 @@ function App() {
   const [level, setLevel] = useState(startLevel);
   /** スコア管理 */
   const [score, setScore] = useState(0);
+  /** ライフ管理 */
+  const [lives, setLives] = useState(() => {
+    switch (difficultyLevel) {
+      case 'easy':
+        return 10;
+      case 'normal':
+        return 5;
+      case 'hard':
+        return 3;
+      default:
+        return 5;
+    }
+  });
   /** 設定モーダルの表示状態 */
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   /** 初回読み込みフラグ */
@@ -132,6 +147,19 @@ function App() {
     setInputHistory([]);
     setLevel(startLevel);  // レベルをstartLevelにリセット
     setScore(0);  // スコアもリセット
+    // ライフを難易度に応じてリセット
+    setLives(() => {
+      switch (difficultyLevel) {
+        case 'easy':
+          return 10;
+        case 'normal':
+          return 5;
+        case 'hard':
+          return 3;
+        default:
+          return 5;
+      }
+    });
   };
 
   /** 
@@ -149,6 +177,19 @@ function App() {
     setInputHistory([]);
     setLevel(startLevel);  // レベルをstartLevelにリセット
     setScore(0);  // スコアもリセット
+    // ライフを難易度に応じてリセット
+    setLives(() => {
+      switch (difficultyLevel) {
+        case 'easy':
+          return 10;
+        case 'normal':
+          return 5;
+        case 'hard':
+          return 3;
+        default:
+          return 5;
+      }
+    });
   };
 
   /** 音声ファイル読み込み中の表示 */
@@ -197,6 +238,7 @@ function App() {
       <div className="game-area">
         {gameMode !== 'waiting' && (
           <QuestionMode
+            lives={lives}
             numbers={numbers}
             inputHistory={inputHistory}
             showAllHistory={showAllHistory}

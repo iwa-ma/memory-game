@@ -33,6 +33,8 @@ const Instruction = styled.div`
 
 /** index.tsxから受け取るProps型 */
 type QuestionModeProps = {
+  /** ライフ */
+  lives: number;
   /** 数字ボタンの表示数設定 */
   numbers: number[];
   /** 入力履歴管理配列 */
