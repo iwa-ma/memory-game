@@ -75,6 +75,8 @@ type ResultModalProps = {
   onContinue: () => void;
   /** 終了する動作関数 */
   onEnd: () => void;
+  /** 途中の正解かどうか */
+  isIntermediate?: boolean;
 };
 
 /** 結果表示コンポーネント */
@@ -83,48 +85,55 @@ export const ResultModal = ({
   level,
   score,
   onContinue,
-  onEnd
+  onEnd,
+  isIntermediate = false
 }: ResultModalProps) => {
   return (
     <ModalOverlay>
       <ModalContent>
-        <Title>{isCorrect ? '正解！' : 'ゲームオーバー'}</Title>
-        <Message>
-          {isCorrect
-            ? `レベル${level}をクリアしました！`
-            : '残念！間違えました。'}
+        <Title>{isCorrect ? (isIntermediate ? '正解！' : 'レベルクリア！') : 'ゲームオーバー'}</Title>
+        {!isIntermediate && (
+          <Message>
+            {isCorrect
+              ? `レベル${level}をクリアしました！`
+              : '残念！間違えました。'}
+          </Message>
+        )}
+        {!isIntermediate && <Message>スコア: {score}</Message>}
+        <Message style={{ color: isCorrect ? '#4CAF50' : '#ff4757', fontWeight: 'bold' }}>
         </Message>
-        <Message>スコア: {score}</Message>
-        {isCorrect ? (
-          <ButtonContainer>
-            <Button
-              className="continue"
-              onClick={onContinue}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              次のレベルへ
-            </Button>
-            <Button
-              className="end"
-              onClick={onEnd}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              終了する
-            </Button>
-          </ButtonContainer>
-        ) : (
-          <ButtonContainer>
-            <Button
-              className="end"
-              onClick={onEnd}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              終了する
-            </Button>
-          </ButtonContainer>
+        {!isIntermediate && (
+          isCorrect ? (
+            <ButtonContainer>
+              <Button
+                className="continue"
+                onClick={onContinue}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                次のレベルへ
+              </Button>
+              <Button
+                className="end"
+                onClick={onEnd}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                終了する
+              </Button>
+            </ButtonContainer>
+          ) : (
+            <ButtonContainer>
+              <Button
+                className="end"
+                onClick={onEnd}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                終了する
+              </Button>
+            </ButtonContainer>
+          )
         )}
       </ModalContent>
     </ModalOverlay>
