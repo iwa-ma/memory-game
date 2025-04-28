@@ -159,26 +159,6 @@ export const QuestionMode = ({
     const currentAnswerIndex = inputHistory.length;
     const isAnswerCorrect = input === sequence[currentAnswerIndex];
 
-    // 押したボタンの音声を再生
-    if (questionVoice === 'animal1') {
-      switch (input) {
-        case 0:
-          playSound('cat1');
-          break;
-        case 1:
-          playSound('cat2');
-          break;
-        case 2:
-          playSound('cat3');
-          break;
-        case 3:
-          playSound('cat4');
-          break;
-      }
-    } else {
-      playSound(`num${input}`);
-    }
-
     if (!isAnswerCorrect) {
       // 不正解の場合
       playSound('incorrect');
