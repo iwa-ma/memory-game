@@ -33,6 +33,8 @@ const Instruction = styled.div`
 
 /** index.tsxから受け取るProps型 */
 type QuestionModeProps = {
+  /** ライフ */
+  lives: number;
   /** 数字ボタンの表示数設定 */
   numbers: number[];
   /** 入力履歴管理配列 */
@@ -57,6 +59,7 @@ type QuestionModeProps = {
 
 /** 出題モードコンポーネント */
 export const QuestionMode = ({
+  lives,
   numbers,
   inputHistory,
   showAllHistory,
@@ -88,6 +91,10 @@ export const QuestionMode = ({
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
   /** 音声再生の準備状態 */
   const [isAudioReady, setIsAudioReady] = useState(false);
+  /** 残りライフ */
+  const [remainingLives, setRemainingLives] = useState(lives);
+  /** 正解した数字の数を管理する状態変数を追加 */
+  const [correctCount, setCorrectCount] = useState(0);
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -155,41 +162,59 @@ export const QuestionMode = ({
   };
 
   /** 解答を検証する関数 */
-  const validateAnswer = (input: number) => {
-    const currentAnswerIndex = inputHistory.length;
-    const isAnswerCorrect = input === sequence[currentAnswerIndex];
+  const validateAnswer = (input: number) => {    
+    // 現在の正解数に基づいて期待される数字を取得
+    const expectedNumber = sequence[correctCount];
+    
+    // 入力値が期待される数字と一致するか
+    const isCurrentInputCorrect = input === expectedNumber;
+    console.log('期待値:', expectedNumber, '入力値:', input, '一致:', isCurrentInputCorrect);
 
-    if (!isAnswerCorrect) {
-      // 不正解の場合
-      playSound('incorrect');
-      setIsCorrect(false);
-      setShowResult(true);
-      setPhase('result');
-      return;
+    if (!isCurrentInputCorrect) {
+        // 不正解の処理
+        playSound('incorrect');
+        setIsCorrect(false);
+        setShowResult(true);
+        // ライフを1減らす処理...
+        setRemainingLives(prev => {
+          const newLives = Math.max(0, prev - 1);
+          if (newLives === 0) {
+            setPhase('result');
+          } else {
+            setTimeout(() => {
+              setShowResult(false);
+            }, 500);
+          }
+          return newLives;
+        });
+        return;
     }
 
     // 正解の場合
     playSound('correct');
+    // 正解数をインクリメントして新しい正解数を設定
+    const newCorrectCount = correctCount + 1;
+    setCorrectCount(newCorrectCount);
     
-    // すべて正解した場合
-    if (currentAnswerIndex === sequence.length - 1) {
-      // 状態を正解に更新
-      setIsCorrect(true);
-      // 結果表示モーダルを表示 
-      setShowResult(true);
-      // レベルクリアの場合resultフェーズに移行
-      setPhase('result');
-      // スコアを更新
-      onScoreUpdate(score + level * 100);
+    // 正解数が目標の長さに達したかチェック
+    if (newCorrectCount === sequence.length) {
+        // レベルクリア
+        setIsCorrect(true);
+        // 結果表示モーダルを表示 
+        setShowResult(true);
+        // resultフェーズに移行
+        setPhase('result');
+        // スコアを更新
+        onScoreUpdate(score + level * 100);
     } else {
-      // 状態を正解に更新
-      setIsCorrect(true);
-      // 結果表示モーダルを表示 
-      setShowResult(true);
-      // 0.5秒後に結果を非表示
-      setTimeout(() => {
-        setShowResult(false);
-      }, 500);
+        // 途中の正解の場合
+        setIsCorrect(true);
+        // 結果表示モーダルを表示 
+        setShowResult(true);
+        // 0.5秒後に結果を非表示
+        setTimeout(() => {
+            setShowResult(false);
+        }, 500);
     }
   };
 
@@ -348,9 +373,8 @@ export const QuestionMode = ({
 
   /** 結果表示モーダルで「終了する」クリック処理 */
   const handleEndGame = () => {
-    // 結果表示モーダーを非表示
+    setCorrectCount(0);
     setShowResult(false);
-    // ゲーム終了
     onGameEnd();
   };
 
@@ -364,10 +388,15 @@ export const QuestionMode = ({
     }
   };
 
+  // レベルが変更されたときやゲームがリセットされたときに正解数をリセット
+  useEffect(() => {
+    setCorrectCount(0);
+  }, [level]);
+
   return (
     <>
       {/* ゲームステータスコンポーネント */}
-      <GameStatus level={level} score={score} onReset={handleReset} />
+      <GameStatus level={level} score={score} lives={remainingLives} onReset={handleReset} />
 
       {/* カウントダウンモーダル */}
       {phase === 'ready' && (
@@ -411,7 +440,8 @@ export const QuestionMode = ({
           score={score}
           onContinue={handleContinue}
           onEnd={handleEndGame}
-          isIntermediate={isCorrect && inputHistory.length < sequence.length}
+          isIntermediate={isCorrect && correctCount < sequence.length}
+          remainingLives={remainingLives}
         />
       )}
     </>
