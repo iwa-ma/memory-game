@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { GameStatus } from '@/components/question/GameStatus';
 import { CountdownModal } from '@/components/question/CountdownModal';
+import { AnswerStartModal } from '@/components/question/AnswerStartModal';
 import { NumberPad } from '@/components/question/NumberPad';
 import { InputHistory } from '@/components/question/InputHistory';
 import { ResultModal } from '@/components/question/ResultModal';
@@ -81,6 +82,8 @@ export const QuestionMode = ({
   const [showResult, setShowResult] = useState(false);
   /** 正解かどうかの状態 */
   const [isCorrect, setIsCorrect] = useState(false);
+  /** 解答モードへの移行を示すモーダルの表示状態 */
+  const [showAnswerMode, setShowAnswerMode] = useState(false);
   /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
   /** 音声再生の準備状態 */
@@ -255,8 +258,15 @@ export const QuestionMode = ({
         } catch (error) {
           console.error('シーケンス表示中にエラーが発生しました:', error);
         } finally {
-          // エラーが発生しても次のフェーズに進む
-          setPhase('answering');
+          // 解答モードへの移行を示すモーダルを表示
+          setShowAnswerMode(true);
+          // 1.5秒後に解答モードに移行
+          setTimeout(() => {
+            // 解答モードへの移行を示すモーダルを非表示
+            setShowAnswerMode(false);
+            // 解答モードに移行
+            setPhase('answering');
+          }, 1500);
         }
       };
       showSequence();
@@ -371,6 +381,10 @@ export const QuestionMode = ({
         <CountdownModal level={level} countdown={countdown} />
       )}
 
+      {/* 解答モードへの移行を示すモーダル */}
+      {showAnswerMode && (
+        <AnswerStartModal level={level} />
+      )}
 
       {/* 解答フェーズの表示 */}
       {phase === 'answering' && (
