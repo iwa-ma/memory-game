@@ -77,6 +77,8 @@ type ResultModalProps = {
   onEnd: () => void;
   /** 途中の正解かどうか */
   isIntermediate?: boolean;
+  /** 残りライフ */
+  remainingLives?: number;
 };
 
 /** 結果表示コンポーネント */
@@ -86,22 +88,30 @@ export const ResultModal = ({
   score,
   onContinue,
   onEnd,
-  isIntermediate = false
+  isIntermediate = false,
+  remainingLives
 }: ResultModalProps) => {
+  const isGameOver = !isCorrect && remainingLives === 0;
+
   return (
     <ModalOverlay>
       <ModalContent>
-        <Title>{isCorrect ? (isIntermediate ? '正解！' : 'レベルクリア！') : 'ゲームオーバー'}</Title>
+        <Title>{isCorrect ? (isIntermediate ? '正解！' : 'レベルクリア！') : (isGameOver ? 'ゲームオーバー' : '不正解')}</Title>
         {!isIntermediate && (
           <Message>
             {isCorrect
               ? `レベル${level}をクリアしました！`
-              : '残念！間違えました。'}
+              : isGameOver
+                ? '残念！間違えました。'
+                : '残念！間違えました。'}
           </Message>
         )}
-        {!isIntermediate && <Message>スコア: {score}</Message>}
-        <Message style={{ color: isCorrect ? '#4CAF50' : '#ff4757', fontWeight: 'bold' }}>
-        </Message>
+        {!isIntermediate && isGameOver && <Message>スコア: {score}</Message>}
+        {!isCorrect && !isIntermediate && (
+          <Message style={{ color: '#ff4757', fontWeight: 'bold' }}>
+            {isGameOver ? 'ライフが0になりました。また遊んでね。' : 'ライフが1つ減りました'}
+          </Message>
+        )}
         {!isIntermediate && (
           isCorrect ? (
             <ButtonContainer>
@@ -119,10 +129,10 @@ export const ResultModal = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                終了する
+                スタート画面に戻る
               </Button>
             </ButtonContainer>
-          ) : (
+          ) : isGameOver ? (
             <ButtonContainer>
               <Button
                 className="end"
@@ -130,10 +140,10 @@ export const ResultModal = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                終了する
+                スタート画面に戻る
               </Button>
             </ButtonContainer>
-          )
+          ) : null
         )}
       </ModalContent>
     </ModalOverlay>
