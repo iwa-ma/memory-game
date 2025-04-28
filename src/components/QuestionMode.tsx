@@ -59,6 +59,7 @@ type QuestionModeProps = {
 
 /** 出題モードコンポーネント */
 export const QuestionMode = ({
+  lives,
   numbers,
   inputHistory,
   showAllHistory,
@@ -90,6 +91,8 @@ export const QuestionMode = ({
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
   /** 音声再生の準備状態 */
   const [isAudioReady, setIsAudioReady] = useState(false);
+  /** 残りライフ */
+  const [remainingLives, setRemainingLives] = useState(lives);
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -369,7 +372,7 @@ export const QuestionMode = ({
   return (
     <>
       {/* ゲームステータスコンポーネント */}
-      <GameStatus level={level} score={score} onReset={handleReset} />
+      <GameStatus level={level} score={score} lives={remainingLives} onReset={handleReset} />
 
       {/* カウントダウンモーダル */}
       {phase === 'ready' && (
