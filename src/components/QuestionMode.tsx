@@ -173,10 +173,23 @@ export const QuestionMode = ({
     
     // すべて正解した場合
     if (currentAnswerIndex === sequence.length - 1) {
+      // 状態を正解に更新
       setIsCorrect(true);
+      // 結果表示モーダルを表示 
       setShowResult(true);
+      // レベルクリアの場合resultフェーズに移行
       setPhase('result');
+      // スコアを更新
       onScoreUpdate(score + level * 100);
+    } else {
+      // 状態を正解に更新
+      setIsCorrect(true);
+      // 結果表示モーダルを表示 
+      setShowResult(true);
+      // 0.5秒後に結果を非表示
+      setTimeout(() => {
+        setShowResult(false);
+      }, 500);
     }
   };
 
@@ -398,6 +411,7 @@ export const QuestionMode = ({
           score={score}
           onContinue={handleContinue}
           onEnd={handleEndGame}
+          isIntermediate={isCorrect && inputHistory.length < sequence.length}
         />
       )}
     </>
