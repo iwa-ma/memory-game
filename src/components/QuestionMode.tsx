@@ -351,15 +351,13 @@ export const QuestionMode = ({
       // 音声ファイルの読み込みが完了したらすぐにカウントダウンを開始
       startCountdown();
     }
-  }, [phase, sequence.length, isSoundLoaded, isAudioReady]);
+  }, [phase, isSoundLoaded, isAudioReady]);
 
   /** 結果表示モーダルで「次のレベルへ」クリック処理 */
   const handleContinue = () => {
     console.log('handleContinue');
     // 結果表示モーダルを非表示
     setShowResult(false);
-    // 出題準備フェーズに移行
-    setPhase('preparing');
     // ボタンを消灯
     setCurrentIndex(-1);
     // 問題をリセット
