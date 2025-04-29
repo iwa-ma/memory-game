@@ -355,7 +355,8 @@ export const QuestionMode = ({
 
   /** 結果表示モーダルで「次のレベルへ」クリック処理 */
   const handleContinue = () => {
-    // 結果表示モーダーを非表示
+    console.log('handleContinue');
+    // 結果表示モーダルを非表示
     setShowResult(false);
     // 出題準備フェーズに移行
     setPhase('preparing');
