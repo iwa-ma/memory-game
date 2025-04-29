@@ -89,18 +89,24 @@ export const useSoundLoader = () => {
           readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][sound.readyState],
           currentTime: sound.currentTime,
           paused: sound.paused,
-          ended: sound.ended
+          ended: sound.ended,
+          duration: sound.duration
         }
       }))
     }, null, 2));
 
-    // 再生可能な音声ファイルを探す
+    // 再生可能な音声ファイルを探す（音声の長さが正常なものを優先）
     const availableSound = soundPool.find(sound => 
-      sound.paused || sound.ended || sound.currentTime === 0
+      (sound.paused || sound.ended || sound.currentTime === 0) && sound.duration >= 0.1
     );
 
     if (!availableSound) {
       console.warn(`利用可能な音声ファイルがありません: ${soundName}、最初のファイルを再利用します`);
+      // 音声の長さが正常なファイルを探す
+      const validSound = soundPool.find(sound => sound.duration >= 0.1);
+      if (validSound) {
+        return validSound;
+      }
       return soundPool[0];
     }
 
@@ -112,7 +118,8 @@ export const useSoundLoader = () => {
           readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][availableSound.readyState],
           currentTime: availableSound.currentTime,
           paused: availableSound.paused,
-          ended: availableSound.ended
+          ended: availableSound.ended,
+          duration: availableSound.duration
         }
       }
     }, null, 2));
@@ -272,6 +279,72 @@ export const useSoundLoader = () => {
     // プールから利用可能な音声ファイルを取得
     const sound = getAvailableSound(soundName);
     
+    // 音声ファイルの準備状態を厳密にチェック
+    if (sound.readyState < 3 || sound.duration < 0.1) { // HAVE_FUTURE_DATA未満または音声の長さが異常な場合
+      console.warn(`音声ファイルの準備が不十分です。再読み込みします: ${soundName}`, JSON.stringify({
+        readyState: sound.readyState,
+        readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][sound.readyState],
+        duration: sound.duration,
+        networkState: sound.networkState,
+        networkStateText: ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'][sound.networkState]
+      }, null, 2));
+
+      // 音声ファイルを再読み込み
+      sound.load();
+      
+      // 音声ファイルの準備が完了するまで待機
+      await new Promise<void>((resolve, reject) => {
+        const handleCanPlay = () => {
+          sound.removeEventListener('canplay', handleCanPlay);
+          resolve();
+        };
+        const handleError = (error: Event) => {
+          sound.removeEventListener('error', handleError);
+          reject(error);
+        };
+        sound.addEventListener('canplay', handleCanPlay);
+        sound.addEventListener('error', handleError);
+        
+        // 5秒後にタイムアウト
+        setTimeout(() => {
+          sound.removeEventListener('canplay', handleCanPlay);
+          sound.removeEventListener('error', handleError);
+          reject(new Error('音声ファイルの準備がタイムアウトしました'));
+        }, 5000);
+      });
+
+      // 音声ファイルの長さを再確認
+      if (sound.duration < 0.1) {
+        console.warn(`音声ファイルの長さが異常です: ${soundName}`, JSON.stringify({
+          duration: sound.duration,
+          readyState: sound.readyState,
+          readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][sound.readyState]
+        }, null, 2));
+        // 音声ファイルを再読み込み
+        sound.load();
+        // 再読み込み後の準備が完了するまで待機
+        await new Promise<void>((resolve, reject) => {
+          const handleCanPlay = () => {
+            sound.removeEventListener('canplay', handleCanPlay);
+            resolve();
+          };
+          const handleError = (error: Event) => {
+            sound.removeEventListener('error', handleError);
+            reject(error);
+          };
+          sound.addEventListener('canplay', handleCanPlay);
+          sound.addEventListener('error', handleError);
+          
+          // 5秒後にタイムアウト
+          setTimeout(() => {
+            sound.removeEventListener('canplay', handleCanPlay);
+            sound.removeEventListener('error', handleError);
+            reject(new Error('音声ファイルの準備がタイムアウトしました'));
+          }, 5000);
+        });
+      }
+    }
+
     console.log(`音声再生を開始: ${soundName}`, JSON.stringify({
       // 音声ファイルの状態
       soundState: {
@@ -306,7 +379,7 @@ export const useSoundLoader = () => {
         // 音声ファイルの読み込みを再試行
         const tryLoad = () => {
           // 音声ファイルが再生可能な場合
-          if (sound.readyState >= 3) { // HAVE_FUTURE_DATA以上なら再生可能
+          if (sound.readyState >= 3 && sound.duration >= 0.1) { // HAVE_FUTURE_DATA以上かつ音声の長さが正常な場合
             return Promise.resolve();
           }
 
@@ -335,6 +408,7 @@ export const useSoundLoader = () => {
                 console.log(`音声ファイルの読み込みが完了: ${soundName}`, JSON.stringify({
                   readyState: sound.readyState,
                   readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][sound.readyState],
+                  duration: sound.duration,
                   loaded: sound.readyState === 4,
                   networkState: sound.networkState,
                   networkStateText: ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'][sound.networkState]
