@@ -145,10 +145,42 @@ export const QuestionMode = ({
     // モバイル端末の場合のみ音声の準備を行う
     if (isMobileDevice()) {
       try {
-        // 音声の準備（実際には再生せず、準備だけ行う）
-        const audio = new Audio();
-        audio.src = '/sounds/3.mp3';
-        await audio.load();
+        // 音声ファイルの準備
+        const sounds = {
+          // 共通の音声
+          common: ['correct', 'incorrect'],
+          // カウントダウンと開始音声
+          countdown: ['3', '2', '1', '0', 'start'],
+          // 音声タイプ別の音声
+          animal1: ['cat1', 'cat2', 'cat3', 'cat4'],
+          human1: Array.from({ length: 10 }, (_, i) => `num${i}`),
+          human2: Array.from({ length: 10 }, (_, i) => `num${i}`)
+        };
+
+        // 必要な音声ファイルを準備
+        const requiredSounds = [
+          ...sounds.common,
+          ...sounds.countdown,
+          ...(questionVoice === 'animal1' ? sounds.animal1 : sounds[questionVoice])
+        ];
+
+        console.log('音声ファイルの準備を開始:', JSON.stringify({
+          // 準備情報
+          preparation: {
+            voiceType: questionVoice,
+            totalSounds: requiredSounds.length,
+            sounds: requiredSounds
+          }
+        }, null, 2));
+        
+        // 各音声ファイルに対してplay()とpause()を実行
+        await Promise.all(requiredSounds.map(async (soundName) => {
+          const audio = new Audio();
+          audio.src = `/sounds/${questionVoice === 'animal1' ? 'animal1' : questionVoice}/${soundName}.mp3`;
+          audio.play();
+          audio.pause();
+        }));
+
         setIsAudioReady(true);
       } catch (error) {
         console.warn('音声の準備に失敗しました:', error);
