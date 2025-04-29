@@ -194,7 +194,7 @@ export const QuestionMode = ({
   };
 
   /** 解答を検証する関数 */
-  const validateAnswer = (input: number) => {    
+  const validateAnswer = async (input: number) => {    
     // 現在の正解数に基づいて期待される数字を取得
     const expectedNumber = sequence[correctCount];
     
@@ -204,18 +204,24 @@ export const QuestionMode = ({
 
     if (!isCurrentInputCorrect) {
         // 不正解の処理
-        playSound('incorrect');
         setIsCorrect(false);
         setShowResult(true);
+        // 音声の長さを取得
+        const soundDuration = getSoundDuration('incorrect');
+        // 音声の長さが異常な値の場合はデフォルト値を使用
+        const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
+        // 音声再生と同時に待機を開始
+        await Promise.all([
+          playSound('incorrect'),
+          new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
+        ]);
         // ライフを1減らす処理...
         setRemainingLives(prev => {
           const newLives = Math.max(0, prev - 1);
           if (newLives === 0) {
             setPhase('result');
           } else {
-            setTimeout(() => {
-              setShowResult(false);
-            }, 500);
+            setShowResult(false);
           }
           return newLives;
         });
@@ -223,7 +229,17 @@ export const QuestionMode = ({
     }
 
     // 正解の場合
-    playSound('correct');
+    setIsCorrect(true);
+    setShowResult(true);
+    // 音声の長さを取得
+    const soundDuration = getSoundDuration('correct');
+    // 音声の長さが異常な値の場合はデフォルト値を使用
+    const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
+    // 音声再生と同時に待機を開始
+    await Promise.all([
+      playSound('correct'),
+      new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
+    ]);
     // 正解数をインクリメントして新しい正解数を設定
     const newCorrectCount = correctCount + 1;
     setCorrectCount(newCorrectCount);
@@ -231,22 +247,13 @@ export const QuestionMode = ({
     // 正解数が目標の長さに達したかチェック
     if (newCorrectCount === sequence.length) {
         // レベルクリア
-        setIsCorrect(true);
-        // 結果表示モーダルを表示 
-        setShowResult(true);
         // resultフェーズに移行
         setPhase('result');
         // スコアを更新
         onScoreUpdate(score + level * 100);
     } else {
         // 途中の正解の場合
-        setIsCorrect(true);
-        // 結果表示モーダルを表示 
-        setShowResult(true);
-        // 0.5秒後に結果を非表示
-        setTimeout(() => {
-            setShowResult(false);
-        }, 500);
+        setShowResult(false);
     }
   };
 
@@ -284,8 +291,8 @@ export const QuestionMode = ({
                 soundName = `num${sequence[i]}`;
               }
 
-              // 音声の待機時間を計算(音声の長さを1000倍してミリ秒に変換 + バッファで0.3秒)
-              const displayDuration = (getSoundDuration(soundName) * 1000) + 300;
+              // 音声の待機時間を計算(音声の長さを1000倍してミリ秒に変換 + バッファ値:モバイル端末の場合は500ms,PCの場合は300ms)
+              const displayDuration = (getSoundDuration(soundName) * 1000) + (isMobileDevice() ? 500 : 300);
 
               // 音声の再生と表示時間の待機を同時に開始
               await Promise.all([
@@ -340,35 +347,35 @@ export const QuestionMode = ({
           // 音声の再生と同時に待機を開始
           await Promise.all([
             playSound('3'),
-            new Promise(resolve => setTimeout(resolve, duration3 * 1000))
+            new Promise(resolve => setTimeout(resolve, duration3 * 1000 + (isMobileDevice() ? 300 : 0)))
           ]);
 
           setCountdown(2);
           const duration2 = getSoundDuration('2');
           await Promise.all([
             playSound('2'),
-            new Promise(resolve => setTimeout(resolve, duration2 * 1000))
+            new Promise(resolve => setTimeout(resolve, duration2 * 1000 + (isMobileDevice() ? 300 : 0)))
           ]);
 
           setCountdown(1);
           const duration1 = getSoundDuration('1');
           await Promise.all([
             playSound('1'),
-            new Promise(resolve => setTimeout(resolve, duration1 * 1000))
+            new Promise(resolve => setTimeout(resolve, duration1 * 1000 + (isMobileDevice() ? 300 : 0)))
           ]);
 
           setCountdown(0);
           const duration0 = getSoundDuration('0');
           await Promise.all([
             playSound('0'),
-            new Promise(resolve => setTimeout(resolve, duration0 * 1000))
+            new Promise(resolve => setTimeout(resolve, duration0 * 1000 + (isMobileDevice() ? 300 : 0)))
           ]);
 
           setCountdown('Start');
           const durationStart = getSoundDuration('start');
           await Promise.all([
             playSound('start'),
-            new Promise(resolve => setTimeout(resolve, durationStart * 1000))
+            new Promise(resolve => setTimeout(resolve, durationStart * 1000 + (isMobileDevice() ? 300 : 0)))
           ]);
 
           setPhase('showing');
@@ -410,12 +417,12 @@ export const QuestionMode = ({
   };
 
   // 解答フェーズで、数字クリック時の処理
-  const handleNumberClick = (number: number) => {
+  const handleNumberClick = async (number: number) => {
     if (phase === 'answering') {
       // 数字クリック動作関数を実行
       onNumberClick(number);
       // 解答を検証
-      validateAnswer(number);
+      await validateAnswer(number);
     }
   };
 
