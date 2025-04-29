@@ -76,6 +76,14 @@ export const useSoundLoader = () => {
       throw new Error(`音声ファイルが見つかりません: ${soundName}`);
     }
 
+    console.log(`音声プールの状態 (${soundName}):`, soundPool.map(sound => ({
+      readyState: sound.readyState,
+      readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][sound.readyState],
+      currentTime: sound.currentTime,
+      paused: sound.paused,
+      ended: sound.ended
+    })));
+
     // 再生可能な音声ファイルを探す
     const availableSound = soundPool.find(sound => 
       sound.paused || sound.ended || sound.currentTime === 0
@@ -85,6 +93,14 @@ export const useSoundLoader = () => {
       console.warn(`利用可能な音声ファイルがありません: ${soundName}、最初のファイルを再利用します`);
       return soundPool[0];
     }
+
+    console.log(`選択された音声ファイル (${soundName}):`, {
+      readyState: availableSound.readyState,
+      readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][availableSound.readyState],
+      currentTime: availableSound.currentTime,
+      paused: availableSound.paused,
+      ended: availableSound.ended
+    });
 
     return availableSound;
   };
@@ -222,6 +238,12 @@ export const useSoundLoader = () => {
       console.warn('音声ファイルが読み込まれていません');
       throw new Error('音声ファイルが読み込まれていません');
     }
+
+    // 呼び出し元のスタックトレースを取得
+    const stackTrace = new Error().stack;
+    console.log(`playSoundが呼び出されました (${soundName}):`, {
+      stackTrace: stackTrace?.split('\n').slice(2).join('\n')  // 最初の2行を除外
+    });
 
     // プールから利用可能な音声ファイルを取得
     const sound = getAvailableSound(soundName);
