@@ -76,13 +76,23 @@ export const useSoundLoader = () => {
       throw new Error(`音声ファイルが見つかりません: ${soundName}`);
     }
 
-    console.log(`音声プールの状態 (${soundName}):`, soundPool.map(sound => ({
-      readyState: sound.readyState,
-      readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][sound.readyState],
-      currentTime: sound.currentTime,
-      paused: sound.paused,
-      ended: sound.ended
-    })));
+    console.log(`音声プールの状態 (${soundName}):`, JSON.stringify({
+      // プールの基本情報
+      poolInfo: {
+        name: soundName,
+        size: soundPool.length
+      },
+      // プール内の各音声ファイルの状態
+      sounds: soundPool.map(sound => ({
+        state: {
+          readyState: sound.readyState,
+          readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][sound.readyState],
+          currentTime: sound.currentTime,
+          paused: sound.paused,
+          ended: sound.ended
+        }
+      }))
+    }, null, 2));
 
     // 再生可能な音声ファイルを探す
     const availableSound = soundPool.find(sound => 
@@ -94,13 +104,18 @@ export const useSoundLoader = () => {
       return soundPool[0];
     }
 
-    console.log(`選択された音声ファイル (${soundName}):`, {
-      readyState: availableSound.readyState,
-      readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][availableSound.readyState],
-      currentTime: availableSound.currentTime,
-      paused: availableSound.paused,
-      ended: availableSound.ended
-    });
+    console.log(`選択された音声ファイル (${soundName}):`, JSON.stringify({
+      // 選択された音声ファイルの情報
+      selectedSound: {
+        state: {
+          readyState: availableSound.readyState,
+          readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][availableSound.readyState],
+          currentTime: availableSound.currentTime,
+          paused: availableSound.paused,
+          ended: availableSound.ended
+        }
+      }
+    }, null, 2));
 
     return availableSound;
   };
@@ -241,36 +256,40 @@ export const useSoundLoader = () => {
 
     // 呼び出し元のスタックトレースを取得
     const stackTrace = new Error().stack;
-    console.log(`playSoundが呼び出されました (${soundName}):`, {
-      stackTrace: stackTrace?.split('\n').slice(2).join('\n')  // 最初の2行を除外
-    });
+    console.log(`playSoundが呼び出されました (${soundName}):`, JSON.stringify({
+      // 呼び出し元の情報
+      caller: {
+        stackTrace: stackTrace?.split('\n').slice(2).join('\n')  // 最初の2行を除外
+      },
+      // 音声ファイルの情報
+      soundInfo: {
+        name: soundName,
+        isLoaded: isLoaded,
+        isEnabled: soundEnabled
+      }
+    }, null, 2));
 
     // プールから利用可能な音声ファイルを取得
     const sound = getAvailableSound(soundName);
     
     console.log(`音声再生を開始: ${soundName}`, JSON.stringify({
       // 音声ファイルの状態
-      soundState: sound.readyState,
-      // 音声ファイルの状態のテキスト
-      readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][sound.readyState],
-      // 音声ファイルの再生位置
-      currentTime: sound.currentTime,
-      // 音声ファイルの長さ
-      duration: sound.duration,
-      // 音声ファイルのエラー
-      soundError: sound.error,
-      // 音声ファイルが読み込まれたかどうか 
-      loaded: sound.readyState === 4,
-      // 音声ファイルが一時停止しているかどうか
-      paused: sound.paused,
-      // 音声ファイルが終了したかどうか
-      ended: sound.ended,
-      // 音声ファイルのソース
-      src: sound.src,
-      // 音声ファイルのネットワーク状態
-      networkState: sound.networkState,
-      // 音声ファイルのネットワーク状態のテキスト
-      networkStateText: ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'][sound.networkState]
+      soundState: {
+        readyState: sound.readyState,
+        readyStateText: ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][sound.readyState],
+        currentTime: sound.currentTime,
+        duration: sound.duration,
+        soundError: sound.error,
+        loaded: sound.readyState === 4,
+        paused: sound.paused,
+        ended: sound.ended
+      },
+      // 音声ファイルのソース情報
+      source: {
+        src: sound.src,
+        networkState: sound.networkState,
+        networkStateText: ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'][sound.networkState]
+      }
     }, null, 2));
 
     // 音声ファイルの長さ
