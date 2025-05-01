@@ -17,15 +17,45 @@ const HistoryTitle = styled.h3`
   text-align: center;
 `;
 
+/** 入力履歴の数字と結果のコンテナ */
+const InputContainer = styled.div`
+  display: inline-flex;
+  align-items: center;
+  margin: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid rgba(97, 218, 251, 0.3);
+  border-radius: 4px;
+  background-color: rgba(97, 218, 251, 0.05);
+`;
+
+/** 通し番号のスタイル */
+const SequenceNumber = styled.span`
+  margin-right: 0.5rem;
+  color: #61dafb;
+  font-size: 0.9em;
+  min-width: 1.5em;
+  text-align: right;
+`;
+
+/** 結果ラベルのスタイル */
+const ResultLabel = styled.span<{ isCorrect: boolean }>`
+  margin-right: 0.5rem;
+  color: ${props => props.isCorrect ? '#4caf50' : '#f44336'};
+  font-weight: bold;
+  min-width: 1.2em;
+  text-align: center;
+`;
+
 /** 入力履歴の数字 */
 const InputNumber = styled.span`
   display: inline-block;
-  margin: 0.25rem;
   padding: 0.25rem 0.5rem;
   background-color: #61dafb;
   color: #282c34;
   border-radius: 4px;
   font-size: 1.2em;
+  min-width: 2em;
+  text-align: center;
 `;
 
 /** すべての入力履歴 */
@@ -33,12 +63,15 @@ const AllInputs = styled.div`
   margin-top: 0.5rem;
   padding-top: 0.5rem;
   border-top: 1px solid rgba(97, 218, 251, 0.3);
+  text-align: center;
 `;
 
 /** InputHistory.tsxから受け取るProps型 */
 type InputHistoryProps = {
   /** 入力履歴管理配列 */
   inputHistory: number[];
+  /** 正答結果の配列 */
+  answerResults: boolean[];
   /** 入力履歴(すべて)の表示状態 */
   showAllHistory: boolean;
   /** 履歴表示クリック動作関数 */
@@ -48,6 +81,7 @@ type InputHistoryProps = {
 /** 入力履歴コンポーネント */
 export const InputHistory = ({
   inputHistory,
+  answerResults,
   showAllHistory,
   onToggleHistory
 }: InputHistoryProps) => {
@@ -75,8 +109,10 @@ export const InputHistory = ({
 
   // 最新の入力履歴（最後の4つ）
   const recentInputs = inputHistory.slice(-4);
+  const recentResults = answerResults.slice(-4);
   // それ以前の入力履歴
   const olderInputs = inputHistory.slice(0, -4);
+  const olderResults = answerResults.slice(0, -4);
 
   return (
     <HistoryContainer>
@@ -85,12 +121,20 @@ export const InputHistory = ({
       </HistoryTitle>
       <>
         {recentInputs.map((num, idx) => (
-          <InputNumber key={idx}>{getDisplayText(num)}</InputNumber>
+          <InputContainer key={idx}>
+            <SequenceNumber>{olderInputs.length + idx + 1}.</SequenceNumber>
+            <ResultLabel isCorrect={recentResults[idx]}>{recentResults[idx] ? '○' : '×'}</ResultLabel>
+            <InputNumber>{getDisplayText(num)}</InputNumber>
+          </InputContainer>
         ))}
         {showAllHistory && (
           <AllInputs>
             {olderInputs.map((num, idx) => (
-              <InputNumber key={idx}>{getDisplayText(num)}</InputNumber>
+              <InputContainer key={idx}>
+                <SequenceNumber>{idx + 1}.</SequenceNumber>
+                <ResultLabel isCorrect={olderResults[idx]}>{olderResults[idx] ? '○' : '×'}</ResultLabel>
+                <InputNumber>{getDisplayText(num)}</InputNumber>
+              </InputContainer>
             ))}
           </AllInputs>
         )}

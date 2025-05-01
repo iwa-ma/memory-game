@@ -95,6 +95,8 @@ export const QuestionMode = ({
   const [remainingLives, setRemainingLives] = useState(lives);
   /** 正解した数字の数を管理する状態変数を追加 */
   const [correctCount, setCorrectCount] = useState(0);
+  /** 各入力の正誤を管理する状態変数を追加 */
+  const [answerResults, setAnswerResults] = useState<boolean[]>([]);
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -200,7 +202,9 @@ export const QuestionMode = ({
     
     // 入力値が期待される数字と一致するか
     const isCurrentInputCorrect = input === expectedNumber;
-    console.log('期待値:', expectedNumber, '入力値:', input, '一致:', isCurrentInputCorrect);
+
+    // 入力の正誤結果を、管理配列に追加(現在の配列をコピーして新しい配列を作成)
+    setAnswerResults(prev => [...prev, isCurrentInputCorrect]);
 
     if (!isCurrentInputCorrect) {
         // 不正解の処理
@@ -412,6 +416,7 @@ export const QuestionMode = ({
   /** 結果表示モーダルで「終了する」クリック処理 */
   const handleEndGame = () => {
     setCorrectCount(0);
+    setAnswerResults([]);
     setShowResult(false);
     onGameEnd();
   };
@@ -429,6 +434,7 @@ export const QuestionMode = ({
   // レベルが変更されたときやゲームがリセットされたときに正解数をリセット
   useEffect(() => {
     setCorrectCount(0);
+    setAnswerResults([]);
   }, [level]);
 
   return (
@@ -466,6 +472,7 @@ export const QuestionMode = ({
       {/* 入力履歴コンポーネント */}
       <InputHistory
         inputHistory={inputHistory}
+        answerResults={answerResults}
         showAllHistory={showAllHistory}
         onToggleHistory={onToggleHistory}
       />
