@@ -6,6 +6,7 @@ import { AnswerStartModal } from '@/components/question/AnswerStartModal';
 import { NumberPad } from '@/components/question/NumberPad';
 import { InputHistory } from '@/components/question/InputHistory';
 import { ResultModal } from '@/components/question/ResultModal';
+import { LastResultModal } from '@/components/question/LastResultModal';
 import { generateSequence } from '@/utils/gameUtils';
 import { isMobileDevice } from '@/utils/deviceUtils';
 import { useSelector } from 'react-redux';
@@ -73,6 +74,12 @@ export const QuestionMode = ({
 }: QuestionModeProps) => {
   /** 音声の種類 */
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
+  /** 音声オンオフ */
+  const isSoundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
+  /** 開始レベル */
+  const startLevel = useSelector((state: RootState) => state.settings.startLevel);
+  /** 難易度 */
+  const difficulty = useSelector((state: RootState) => state.settings.difficultyLevel);
   /** 問題の数字配列 */
   const [sequence, setSequence] = useState<number[]>([]);
   /** 現在光らせているボタンのインデックス */
@@ -479,15 +486,30 @@ export const QuestionMode = ({
 
       {/* 結果表示コンポーネント　showResultがtrueの場合に表示 */}
       {showResult && (
-        <ResultModal
-          isCorrect={isCorrect}
-          level={level}
-          score={score}
-          onContinue={handleContinue}
-          onEnd={handleEndGame}
-          isIntermediate={isCorrect && correctCount < sequence.length}
-          remainingLives={remainingLives}
-        />
+        <>
+          {/* ゲームオーバーまたは最終レベルクリア時はLastResultModalを表示 */}
+          {(remainingLives === 0 || (level === 10 && isCorrect && correctCount === sequence.length)) ? (
+            <LastResultModal
+              finalLevel={level}
+              soundType={questionVoice}
+              isSoundEnabled={isSoundEnabled}
+              startLevel={startLevel}
+              difficulty={difficulty}
+              finalScore={score}
+              onReturnToStart={handleEndGame}
+            />
+          ) : (
+            <ResultModal
+              isCorrect={isCorrect}
+              level={level}
+              score={score}
+              onContinue={handleContinue}
+              onEnd={handleEndGame}
+              isIntermediate={isCorrect && correctCount < sequence.length}
+              remainingLives={remainingLives}
+            />
+          )}
+        </>
       )}
     </>
   );
