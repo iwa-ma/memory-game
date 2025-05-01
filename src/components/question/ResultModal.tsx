@@ -77,39 +77,25 @@ type ResultModalProps = {
   onEnd: () => void;
   /** 途中の正解かどうか */
   isIntermediate?: boolean;
-  /** 残りライフ */
-  remainingLives?: number;
 };
 
 /** 結果表示コンポーネント */
 export const ResultModal = ({
   isCorrect,
   level,
-  score,
   onContinue,
   onEnd,
   isIntermediate = false,
-  remainingLives
 }: ResultModalProps) => {
-  const isGameOver = !isCorrect && remainingLives === 0;
-
   return (
     <ModalOverlay>
       <ModalContent>
-        <Title>{isCorrect ? (isIntermediate ? '正解！' : 'レベルクリア！') : (isGameOver ? 'ゲームオーバー' : '不正解')}</Title>
+        <Title>{isCorrect ? (isIntermediate ? '正解！' : 'レベルクリア！') : '不正解'}</Title>
         {!isIntermediate && (
           <Message>
             {isCorrect
               ? `レベル${level}をクリアしました！`
-              : isGameOver
-                ? '残念！間違えました。'
-                : '残念！間違えました。'}
-          </Message>
-        )}
-        {!isIntermediate && isGameOver && <Message>スコア: {score}</Message>}
-        {!isCorrect && !isIntermediate && (
-          <Message style={{ color: '#ff4757', fontWeight: 'bold' }}>
-            {isGameOver ? 'ライフが0になりました。また遊んでね。' : 'ライフが1つ減りました'}
+              : '残念！間違えました。'}
           </Message>
         )}
         {!isIntermediate && (
@@ -123,17 +109,6 @@ export const ResultModal = ({
               >
                 次のレベルへ
               </Button>
-              <Button
-                className="end"
-                onClick={onEnd}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                スタート画面に戻る
-              </Button>
-            </ButtonContainer>
-          ) : isGameOver ? (
-            <ButtonContainer>
               <Button
                 className="end"
                 onClick={onEnd}

@@ -6,6 +6,7 @@ import { AnswerStartModal } from '@/components/question/AnswerStartModal';
 import { NumberPad } from '@/components/question/NumberPad';
 import { InputHistory } from '@/components/question/InputHistory';
 import { ResultModal } from '@/components/question/ResultModal';
+import { LastResultModal } from '@/components/question/LastResultModal';
 import { generateSequence } from '@/utils/gameUtils';
 import { isMobileDevice } from '@/utils/deviceUtils';
 import { useSelector } from 'react-redux';
@@ -55,6 +56,8 @@ type QuestionModeProps = {
   onScoreUpdate: (newScore: number) => void;
   /** ゲーム終了関数 */
   onGameEnd: () => void;
+  /** 最終レベル */
+  finalLevel: number;
 };
 
 /** 出題モードコンポーネント */
@@ -69,10 +72,17 @@ export const QuestionMode = ({
   onToggleHistory,
   onLevelUp,
   onScoreUpdate,
-  onGameEnd
+  onGameEnd,
+  finalLevel
 }: QuestionModeProps) => {
   /** 音声の種類 */
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
+  /** 音声オンオフ */
+  const isSoundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
+  /** 開始レベル */
+  const startLevel = useSelector((state: RootState) => state.settings.startLevel);
+  /** 難易度 */
+  const difficulty = useSelector((state: RootState) => state.settings.difficultyLevel);
   /** 問題の数字配列 */
   const [sequence, setSequence] = useState<number[]>([]);
   /** 現在光らせているボタンのインデックス */
@@ -224,6 +234,7 @@ export const QuestionMode = ({
           const newLives = Math.max(0, prev - 1);
           if (newLives === 0) {
             setPhase('result');
+            setIsCorrect(false);  // ゲームオーバー時は不正解として扱う
           } else {
             setShowResult(false);
           }
@@ -479,15 +490,31 @@ export const QuestionMode = ({
 
       {/* 結果表示コンポーネント　showResultがtrueの場合に表示 */}
       {showResult && (
-        <ResultModal
-          isCorrect={isCorrect}
-          level={level}
-          score={score}
-          onContinue={handleContinue}
-          onEnd={handleEndGame}
-          isIntermediate={isCorrect && correctCount < sequence.length}
-          remainingLives={remainingLives}
-        />
+        <>
+          {/* 最終レベルクリア時またはゲームオーバー時はLastResultModalを表示 */}
+          {(level === finalLevel && isCorrect && correctCount === sequence.length) || 
+           (remainingLives === 0 && !isCorrect) ? (
+            <LastResultModal
+              finalLevel={level}
+              soundType={questionVoice}
+              isSoundEnabled={isSoundEnabled}
+              startLevel={startLevel}
+              difficulty={difficulty}
+              finalScore={score}
+              onReturnToStart={handleEndGame}
+              isGameOver={remainingLives === 0}
+            />
+          ) : (
+            <ResultModal
+              isCorrect={isCorrect}
+              level={level}
+              score={score}
+              onContinue={handleContinue}
+              onEnd={handleEndGame}
+              isIntermediate={isCorrect && correctCount < sequence.length}
+            />
+          )}
+        </>
       )}
     </>
   );
