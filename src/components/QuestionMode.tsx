@@ -449,8 +449,8 @@ export const QuestionMode = ({
       {/* 解答フェーズの表示 */}
       {phase === 'answering' && (
         <Instruction>
-          <h3>このレベルの出題数は{sequence.length}個です</h3>
           <h3>{questionVoice === 'animal1' ? '光った順番に鳴き声を押してください' : '光った順番に数字を押してください'}</h3>
+          <h3>正解数: {correctCount} / 残り: {sequence.length - correctCount}</h3>
         </Instruction>
       )}
 
