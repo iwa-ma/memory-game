@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { convertSoundType, convertDifficulty } from '@/utils/settingsConverter';
 
 /** モーダルオーバーレイスタイル */
 const ModalOverlay = styled.div`
@@ -111,18 +112,10 @@ export const LastResultModal = ({
         <Message>最終スコア: {finalScore}</Message>
         
         <SettingsContainer>
-          <SettingItem>音声種類: {
-            soundType === 'human1' ? '音声1' :
-            soundType === 'human2' ? '音声2' :
-            soundType === 'animal1' ? '猫' : soundType
-          }</SettingItem>
+          <SettingItem>音声種類: {convertSoundType(soundType)}</SettingItem>
           <SettingItem>音声: {isSoundEnabled ? 'オン' : 'オフ'}</SettingItem>
           <SettingItem>開始レベル: {startLevel}</SettingItem>
-          <SettingItem>難易度: {
-            difficulty === 'easy' ? '簡単' :
-            difficulty === 'normal' ? '普通' :
-            difficulty === 'hard' ? '難しい' : difficulty
-          }</SettingItem>
+          <SettingItem>難易度: {convertDifficulty(difficulty)}</SettingItem>
         </SettingsContainer>
 
         <ButtonContainer>

@@ -9,6 +9,7 @@ import {
   setDifficultyLevel,
 } from '@/store/settingsSlice';
 import { useSoundLoader } from '@/hooks/useSoundLoader';
+import { convertSoundType, convertDifficulty } from '@/utils/settingsConverter';
 
 /** モーダルオーバーレイのスタイル */
 const ModalOverlay = styled.div`
@@ -179,9 +180,9 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             onChange={(e) => handleVoiceChange(e.target.value as 'human1' | 'human2' | 'animal1')}
             disabled={isSoundLoading}
           >
-            <option value="human1">音声1</option>
-            <option value="human2">音声2</option>
-            <option value="animal1">猫</option>
+            <option value="human1">{convertSoundType('human1')}</option>
+            <option value="human2">{convertSoundType('human2')}</option>
+            <option value="animal1">{convertSoundType('animal1')}</option>
           </StyledSelect>
           {isSoundLoading && (
             <div style={{ color: '#61dafb', marginTop: '0.5rem' }}>
@@ -240,9 +241,9 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             onChange={(e) => dispatch(setDifficultyLevel(e.target.value as 'easy' | 'normal' | 'hard'))}
             disabled={isSoundLoading}
           >
-            <option value="easy">簡単</option>
-            <option value="normal">普通</option>
-            <option value="hard">難しい</option>
+            <option value="easy">{convertDifficulty('easy')}</option>
+            <option value="normal">{convertDifficulty('normal')}</option>
+            <option value="hard">{convertDifficulty('hard')}</option>
           </StyledSelect>
         </SettingsSection>
 
