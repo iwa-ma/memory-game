@@ -57,6 +57,20 @@ const SoundNotice = styled.p`
   margin-bottom: 1.5rem;
 `;
 
+/** 難易度に応じた初期ライフ数を取得する関数 */
+const getInitialLives = (difficultyLevel: string): number => {
+  switch (difficultyLevel) {
+    case 'easy':
+      return 20;
+    case 'normal':
+      return 15;
+    case 'hard':
+      return 10;
+    default:
+      return 15;
+  }
+};
+
 function App() {
   /** 開始レベル */
   const startLevel = useSelector((state: RootState) => state.settings.startLevel);
@@ -77,18 +91,7 @@ function App() {
   /** スコア管理 */
   const [score, setScore] = useState(0);
   /** ライフ管理 */
-  const [lives, setLives] = useState(() => {
-    switch (difficultyLevel) {
-      case 'easy':
-        return 10;
-      case 'normal':
-        return 5;
-      case 'hard':
-        return 3;
-      default:
-        return 5;
-    }
-  });
+  const [lives, setLives] = useState(() => getInitialLives(difficultyLevel));
   /** 設定モーダルの表示状態 */
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   /** 初回読み込みフラグ */
@@ -146,20 +149,9 @@ function App() {
     setGameMode('waiting');
     setInputHistory([]);
     setLevel(startLevel);  // レベルをstartLevelにリセット
-    setScore(0);  // スコアもリセット
-    // ライフを難易度に応じてリセット
-    setLives(() => {
-      switch (difficultyLevel) {
-        case 'easy':
-          return 10;
-        case 'normal':
-          return 5;
-        case 'hard':
-          return 3;
-        default:
-          return 5;
-      }
-    });
+    setScore(0);  // スコアリセット
+    // ライフリセット
+    setLives(() => getInitialLives(difficultyLevel));
   };
 
   /** 
@@ -177,19 +169,8 @@ function App() {
     setInputHistory([]);
     setLevel(startLevel);  // レベルをstartLevelにリセット
     setScore(0);  // スコアもリセット
-    // ライフを難易度に応じてリセット
-    setLives(() => {
-      switch (difficultyLevel) {
-        case 'easy':
-          return 10;
-        case 'normal':
-          return 5;
-        case 'hard':
-          return 3;
-        default:
-          return 5;
-      }
-    });
+    // ライフリセット
+    setLives(() => getInitialLives(difficultyLevel));
   };
 
   /** 音声ファイル読み込み中の表示 */

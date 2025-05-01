@@ -6,7 +6,7 @@
  */
 export const generateSequence = (level: number, range: number): number[] => {
   // 生成する数字の数(レベルに応じて数を増やす)
-  const sequenceLength = level + 2;
+  const sequenceLength = level + 1;
   
   // 出題の個数分数字を生成
   const sequence = Array.from(
