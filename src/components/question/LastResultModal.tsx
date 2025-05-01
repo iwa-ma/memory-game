@@ -25,6 +25,15 @@ const ModalContent = styled.div`
   border: 2px solid #61dafb;
   box-shadow: 0 0 20px rgba(97, 218, 251, 0.3);
   min-width: 300px;
+
+  /* スマートフォン向けのスタイル */
+  @media (max-width: 768px) {
+    margin: 0 1rem;
+    max-width: calc(100% - 2rem);
+    width: 100%;
+    min-width: auto;  /* スマホでは最小幅の制限を解除 */
+    box-sizing: border-box;
+  }
 `;
 
 /** タイトルスタイル */
@@ -46,11 +55,11 @@ const SettingsContainer = styled.div`
   margin: 1.5rem 0;
   padding: 1rem;
   background: rgba(97, 218, 251, 0.1);
-  border-radius: 4px;
+  border-radius: 8px;
 `;
 
 /** 設定値スタイル */
-const SettingItem = styled.div`
+const SettingItem = styled.p`
   color: white;
   margin: 0.5rem 0;
   font-size: 1rem;
@@ -71,9 +80,9 @@ const Button = styled(motion.button)`
   font-size: 1rem;
   cursor: pointer;
   font-weight: bold;
-  transition: all 0.3s ease;
   background-color: #ff4757;
   color: white;
+  transition: all 0.3s ease;
 `;
 
 /** QuestionMode.tsxから受け取るpropsの型 */
@@ -92,6 +101,8 @@ type LastResultModalProps = {
   finalScore: number;
   /** スタート画面に戻る動作関数 */
   onReturnToStart: () => void;
+  /** ゲームオーバーかどうか */
+  isGameOver: boolean;
 };
 
 /** ゲーム終了モーダル　*/
@@ -103,11 +114,17 @@ export const LastResultModal = ({
   difficulty,
   finalScore,
   onReturnToStart,
+  isGameOver
 }: LastResultModalProps) => {
   return (
     <ModalOverlay>
       <ModalContent>
-        <Title>ゲーム終了</Title>
+        <Title>{isGameOver ? 'ゲームオーバー' : 'レベルクリア！'}</Title>
+        <Message>
+          {isGameOver 
+            ? 'ライフが0になりました。また遊んでね。'
+            : 'レベル10クリアおめでとうございます！'}
+        </Message>
         <Message>最終到達レベル: {finalLevel}</Message>
         <Message>最終スコア: {finalScore}</Message>
         

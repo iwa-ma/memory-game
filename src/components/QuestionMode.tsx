@@ -56,6 +56,8 @@ type QuestionModeProps = {
   onScoreUpdate: (newScore: number) => void;
   /** ゲーム終了関数 */
   onGameEnd: () => void;
+  /** 最終レベル */
+  finalLevel: number;
 };
 
 /** 出題モードコンポーネント */
@@ -70,7 +72,8 @@ export const QuestionMode = ({
   onToggleHistory,
   onLevelUp,
   onScoreUpdate,
-  onGameEnd
+  onGameEnd,
+  finalLevel
 }: QuestionModeProps) => {
   /** 音声の種類 */
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
@@ -231,6 +234,7 @@ export const QuestionMode = ({
           const newLives = Math.max(0, prev - 1);
           if (newLives === 0) {
             setPhase('result');
+            setIsCorrect(false);  // ゲームオーバー時は不正解として扱う
           } else {
             setShowResult(false);
           }
@@ -487,8 +491,9 @@ export const QuestionMode = ({
       {/* 結果表示コンポーネント　showResultがtrueの場合に表示 */}
       {showResult && (
         <>
-          {/* ゲームオーバーまたは最終レベルクリア時はLastResultModalを表示 */}
-          {(remainingLives === 0 || (level === 10 && isCorrect && correctCount === sequence.length)) ? (
+          {/* 最終レベルクリア時またはゲームオーバー時はLastResultModalを表示 */}
+          {(level === finalLevel && isCorrect && correctCount === sequence.length) || 
+           (remainingLives === 0 && !isCorrect) ? (
             <LastResultModal
               finalLevel={level}
               soundType={questionVoice}
@@ -497,6 +502,7 @@ export const QuestionMode = ({
               difficulty={difficulty}
               finalScore={score}
               onReturnToStart={handleEndGame}
+              isGameOver={remainingLives === 0}
             />
           ) : (
             <ResultModal
@@ -506,7 +512,6 @@ export const QuestionMode = ({
               onContinue={handleContinue}
               onEnd={handleEndGame}
               isIntermediate={isCorrect && correctCount < sequence.length}
-              remainingLives={remainingLives}
             />
           )}
         </>

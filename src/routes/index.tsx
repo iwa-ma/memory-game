@@ -71,6 +71,9 @@ const getInitialLives = (difficultyLevel: string): number => {
   }
 };
 
+/** 最終レベル */
+const FINAL_LEVEL = 10;
+
 function App() {
   /** 開始レベル */
   const startLevel = useSelector((state: RootState) => state.settings.startLevel);
@@ -230,6 +233,7 @@ function App() {
             onLevelUp={handleLevelUp}
             onScoreUpdate={handleScoreUpdate}
             onGameEnd={handleGameEnd}
+            finalLevel={FINAL_LEVEL}
           />
         )}
       </div>
