@@ -83,6 +83,8 @@ function App() {
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
   /** 難易度 */
   const difficultyLevel = useSelector((state: RootState) => state.settings.difficultyLevel);
+  /** 音声の有効/無効 */
+  const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
   /** 数字ボタンの表示数設定(animal1の場合は4、それ以外の場合は10)  */
   const numbers = Array.from({ length: questionVoice === 'animal1' ? 4 : 9 }, (_, i) => i);
 
@@ -114,13 +116,15 @@ function App() {
 
   /** 音声再生の準備を行う関数 */
   const prepareAudio = async () => {
+    // 音声が有効の場合のみ音声の準備を行う
+    if (!soundEnabled) return;
     // モバイル端末の場合のみ音声の準備を行う
     if (isMobileDevice()) {
       try {
-        // 音声の準備（実際には再生せず、準備だけ行う）
-        const audio = new Audio();
-        audio.src = '/sounds/3.mp3';
-        await audio.load();
+      // 音声の準備（実際には再生せず、準備だけ行う）
+      const audio = new Audio();
+      audio.src = '/sounds/3.mp3';
+      await audio.load();
       } catch (error) {
         console.warn('音声の準備に失敗しました:', error);
       }

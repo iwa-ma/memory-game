@@ -209,22 +209,30 @@ export const QuestionMode = ({
         // 不正解の処理
         setIsCorrect(false);
         setShowResult(true);
-        // 音声の長さを取得
-        const soundDuration = getSoundDuration('incorrect');
-        // 音声の長さが異常な値の場合はデフォルト値を使用
-        const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
-        // 音声再生と同時に待機を開始
-        await Promise.all([
-          playSound('incorrect'),
-          new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
-        ]);
-        // ライフを1減らす処理...
+
+        if (isSoundEnabled) {
+          // 音声の長さを取得
+          const soundDuration = getSoundDuration('incorrect');
+          // 音声の長さが異常な値の場合はデフォルト値を使用
+          const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
+          // 音声再生と同時に待機を開始
+          await Promise.all([
+            playSound('incorrect'),
+            new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
+          ]);
+        } else {
+          // 音声が無効な場合は固定の待機時間(1秒)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        // ライフを1減らす処理
         setRemainingLives(prev => {
           const newLives = Math.max(0, prev - 1);
           if (newLives === 0) {
             setPhase('result');
             setIsCorrect(false);  // ゲームオーバー時は不正解として扱う
           } else {
+            // モーダルを非表示
             setShowResult(false);
           }
           return newLives;
@@ -235,15 +243,22 @@ export const QuestionMode = ({
     // 正解の場合
     setIsCorrect(true);
     setShowResult(true);
-    // 音声の長さを取得
-    const soundDuration = getSoundDuration('correct');
-    // 音声の長さが異常な値の場合はデフォルト値を使用
-    const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
-    // 音声再生と同時に待機を開始
-    await Promise.all([
-      playSound('correct'),
-      new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
-    ]);
+
+    if (isSoundEnabled) {
+      // 音声の長さを取得
+      const soundDuration = getSoundDuration('correct');
+      // 音声の長さが異常な値の場合はデフォルト値を使用
+      const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
+      // 音声再生と同時に待機を開始
+      await Promise.all([
+        playSound('correct'),
+        new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
+      ]);
+    } else {
+      // 音声が無効な場合は固定の待機時間(1.0秒)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     // 正解数をインクリメントして新しい正解数を設定
     const newCorrectCount = correctCount + 1;
     setCorrectCount(newCorrectCount);
@@ -268,43 +283,46 @@ export const QuestionMode = ({
       const showSequence = async () => {
         try {
           for (let i = 0; i < sequence.length; i++) {
-            // ボタンを光らせる動作はmotion.buttonのanimateプロパティで行う、
-            // setCurrentIndexで指定した添え字の数字が対象。
-            setCurrentIndex(i);  // ボタンを光らせる(NumberPad.tsxで該当Indexのボタン色変更)
+            setCurrentIndex(i);
             
-            // 音声を再生
-            try {
-              let soundName = '';
-              
-              if (questionVoice === 'animal1') {
-                switch (sequence[i]) {
-                  case 0:
-                    soundName = 'cat1';
-                    break;
-                  case 1:
-                    soundName = 'cat2';
-                    break;
-                  case 2:
-                    soundName = 'cat3';
-                    break;
-                  case 3:
-                    soundName = 'cat4';
-                    break;
+            // 音声が有効な場合、音声を再生
+            if (isSoundEnabled) {
+              try {
+                let soundName = '';
+                
+                if (questionVoice === 'animal1') {
+                  switch (sequence[i]) {
+                    case 0:
+                      soundName = 'cat1';
+                      break;
+                    case 1:
+                      soundName = 'cat2';
+                      break;
+                    case 2:
+                      soundName = 'cat3';
+                      break;
+                    case 3:
+                      soundName = 'cat4';
+                      break;
+                  }
+                } else {
+                  soundName = `num${sequence[i]}`;
                 }
-              } else {
-                soundName = `num${sequence[i]}`;
+
+                // 音声の待機時間を計算
+                const displayDuration = (getSoundDuration(soundName) * 1000) + (isMobileDevice() ? 500 : 300);
+
+                // 音声の再生と表示時間の待機を同時に開始
+                await Promise.all([
+                  playSound(soundName),
+                  new Promise(resolve => setTimeout(resolve, displayDuration))
+                ]);
+              } catch (error) {
+                console.warn('音声の再生に失敗しました:', error);
               }
-
-              // 音声の待機時間を計算(音声の長さを1000倍してミリ秒に変換 + バッファ値:モバイル端末の場合は500ms,PCの場合は300ms)
-              const displayDuration = (getSoundDuration(soundName) * 1000) + (isMobileDevice() ? 500 : 300);
-
-              // 音声の再生と表示時間の待機を同時に開始
-              await Promise.all([
-                playSound(soundName),
-                new Promise(resolve => setTimeout(resolve, displayDuration))
-              ]);
-            } catch (error) {
-              console.warn('音声の再生に失敗しました:', error);
+            } else {
+              // 音声無効時は表示時間のみ待機（1.3秒）
+              await new Promise(resolve => setTimeout(resolve, 1300));
             }
             
             // ボタンを消灯
@@ -334,7 +352,7 @@ export const QuestionMode = ({
     }
   }, [phase, sequence]);
 
-  // 初回マウントとリセット時のカウントダウン処理を統一
+  /** カウントダウン処理 */
   useEffect(() => {
     // 音声ファイルの読み込みが完了し、かつ音声再生の準備ができている場合に実行
     if (phase === 'ready' && isSoundLoaded && isAudioReady) {
@@ -348,39 +366,60 @@ export const QuestionMode = ({
         try {
           setCountdown(3);
           const duration3 = getSoundDuration('3');
-          // 音声の再生と同時に待機を開始
-          await Promise.all([
-            playSound('3'),
-            new Promise(resolve => setTimeout(resolve, duration3 * 1000 + (isMobileDevice() ? 300 : 0)))
-          ]);
+          if (isSoundEnabled) {
+            // 音声の再生と同時に待機を開始
+            await Promise.all([
+              playSound('3'),
+              new Promise(resolve => setTimeout(resolve, duration3 * 1000 + (isMobileDevice() ? 300 : 0)))
+            ]);
+          } else {
+            // 音声が無効な場合は音声の長さと同じ時間待機
+            await new Promise(resolve => setTimeout(resolve, duration3 * 1000));
+          }
 
           setCountdown(2);
           const duration2 = getSoundDuration('2');
-          await Promise.all([
-            playSound('2'),
-            new Promise(resolve => setTimeout(resolve, duration2 * 1000 + (isMobileDevice() ? 300 : 0)))
-          ]);
+          if (isSoundEnabled) {
+            await Promise.all([
+              playSound('2'),
+              new Promise(resolve => setTimeout(resolve, duration2 * 1000 + (isMobileDevice() ? 300 : 0)))
+            ]);
+          } else {
+            await new Promise(resolve => setTimeout(resolve, duration2 * 1000));
+          }
 
           setCountdown(1);
           const duration1 = getSoundDuration('1');
-          await Promise.all([
-            playSound('1'),
-            new Promise(resolve => setTimeout(resolve, duration1 * 1000 + (isMobileDevice() ? 300 : 0)))
-          ]);
+          if (isSoundEnabled) {
+            await Promise.all([
+              playSound('1'),
+              new Promise(resolve => setTimeout(resolve, duration1 * 1000 + (isMobileDevice() ? 300 : 0)))
+            ]);
+          } else {
+            await new Promise(resolve => setTimeout(resolve, duration1 * 1000));
+          }
 
           setCountdown(0);
           const duration0 = getSoundDuration('0');
-          await Promise.all([
-            playSound('0'),
-            new Promise(resolve => setTimeout(resolve, duration0 * 1000 + (isMobileDevice() ? 300 : 0)))
-          ]);
+          if (isSoundEnabled) {
+            await Promise.all([
+              playSound('0'),
+              new Promise(resolve => setTimeout(resolve, duration0 * 1000 + (isMobileDevice() ? 300 : 0)))
+            ]);
+          } else {
+            await new Promise(resolve => setTimeout(resolve, duration0 * 1000));
+          }
 
           setCountdown('Start');
           const durationStart = getSoundDuration('start');
-          await Promise.all([
-            playSound('start'),
-            new Promise(resolve => setTimeout(resolve, durationStart * 1000 + (isMobileDevice() ? 300 : 0)))
-          ]);
+          if (isSoundEnabled) {
+            await Promise.all([
+              playSound('start'),
+              new Promise(resolve => setTimeout(resolve, durationStart * 1000 + (isMobileDevice() ? 300 : 0)))
+            ]);
+          } else {
+            await new Promise(resolve => setTimeout(resolve, durationStart * 1000));
+          }
 
           setPhase('showing');
           setCountdown(3);
