@@ -209,22 +209,30 @@ export const QuestionMode = ({
         // 不正解の処理
         setIsCorrect(false);
         setShowResult(true);
-        // 音声の長さを取得
-        const soundDuration = getSoundDuration('incorrect');
-        // 音声の長さが異常な値の場合はデフォルト値を使用
-        const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
-        // 音声再生と同時に待機を開始
-        await Promise.all([
-          playSound('incorrect'),
-          new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
-        ]);
-        // ライフを1減らす処理...
+
+        if (isSoundEnabled) {
+          // 音声の長さを取得
+          const soundDuration = getSoundDuration('incorrect');
+          // 音声の長さが異常な値の場合はデフォルト値を使用
+          const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
+          // 音声再生と同時に待機を開始
+          await Promise.all([
+            playSound('incorrect'),
+            new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
+          ]);
+        } else {
+          // 音声が無効な場合は固定の待機時間(1秒)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        // ライフを1減らす処理
         setRemainingLives(prev => {
           const newLives = Math.max(0, prev - 1);
           if (newLives === 0) {
             setPhase('result');
             setIsCorrect(false);  // ゲームオーバー時は不正解として扱う
           } else {
+            // モーダルを非表示
             setShowResult(false);
           }
           return newLives;
@@ -235,15 +243,22 @@ export const QuestionMode = ({
     // 正解の場合
     setIsCorrect(true);
     setShowResult(true);
-    // 音声の長さを取得
-    const soundDuration = getSoundDuration('correct');
-    // 音声の長さが異常な値の場合はデフォルト値を使用
-    const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
-    // 音声再生と同時に待機を開始
-    await Promise.all([
-      playSound('correct'),
-      new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
-    ]);
+
+    if (isSoundEnabled) {
+      // 音声の長さを取得
+      const soundDuration = getSoundDuration('correct');
+      // 音声の長さが異常な値の場合はデフォルト値を使用
+      const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
+      // 音声再生と同時に待機を開始
+      await Promise.all([
+        playSound('correct'),
+        new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
+      ]);
+    } else {
+      // 音声が無効な場合は固定の待機時間(1.0秒)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     // 正解数をインクリメントして新しい正解数を設定
     const newCorrectCount = correctCount + 1;
     setCorrectCount(newCorrectCount);
