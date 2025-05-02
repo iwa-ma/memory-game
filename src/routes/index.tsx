@@ -104,8 +104,6 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   /** 初回読み込みフラグ */
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  /** phase管理 */
-  const [questionPhase, setQuestionPhase] = useState<string>('ready');
 
   const { isLoading, error } = useSoundLoader();
 
@@ -244,7 +242,6 @@ function App() {
             onScoreUpdate={handleScoreUpdate}
             onGameEnd={handleGameEnd}
             finalLevel={FINAL_LEVEL}
-            onPhaseChange={setQuestionPhase}
           />
         )}
       </div>
