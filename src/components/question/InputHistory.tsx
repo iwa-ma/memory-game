@@ -107,12 +107,15 @@ export const InputHistory = ({
     return number.toString();
   };
 
-  // 最新の入力履歴（最後の4つ）
-  const recentInputs = inputHistory.slice(-4);
-  const recentResults = answerResults.slice(-4);
-  // それ以前の入力履歴
-  const olderInputs = inputHistory.slice(0, -4);
-  const olderResults = answerResults.slice(0, -4);
+  // 最新の入力履歴（最後の4つ）を逆順で取得
+  const recentInputs = inputHistory.slice(-4).reverse();
+  const recentResults = answerResults.slice(-4).reverse();
+  // それ以前の入力履歴も逆順で取得
+  const olderInputs = inputHistory.slice(0, -4).reverse();
+  const olderResults = answerResults.slice(0, -4).reverse();
+
+  // 最新4つの開始インデックスを計算
+  const startIndex = inputHistory.length;
 
   return (
     <HistoryContainer>
@@ -122,16 +125,16 @@ export const InputHistory = ({
       <>
         {recentInputs.map((num, idx) => (
           <InputContainer key={idx}>
-            <SequenceNumber>{olderInputs.length + idx + 1}.</SequenceNumber>
+            <SequenceNumber>{startIndex - idx}.</SequenceNumber>
             <ResultLabel isCorrect={recentResults[idx]}>{recentResults[idx] ? '○' : '×'}</ResultLabel>
             <InputNumber>{getDisplayText(num)}</InputNumber>
           </InputContainer>
         ))}
-        {showAllHistory && (
+        {showAllHistory && olderInputs.length > 0 && (
           <AllInputs>
             {olderInputs.map((num, idx) => (
               <InputContainer key={idx}>
-                <SequenceNumber>{idx + 1}.</SequenceNumber>
+                <SequenceNumber>{startIndex - recentInputs.length - idx}.</SequenceNumber>
                 <ResultLabel isCorrect={olderResults[idx]}>{olderResults[idx] ? '○' : '×'}</ResultLabel>
                 <InputNumber>{getDisplayText(num)}</InputNumber>
               </InputContainer>
