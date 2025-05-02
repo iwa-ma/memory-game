@@ -127,6 +127,7 @@ export const useSoundLoader = () => {
     return availableSound;
   };
 
+  /** 音声ファイルを読み込む関数 */
   const loadSounds = async () => {
     // 音声が無効な場合は何もしない
     if (!soundEnabled) {

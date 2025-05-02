@@ -334,7 +334,7 @@ export const QuestionMode = ({
     }
   }, [phase, sequence]);
 
-  // 初回マウントとリセット時のカウントダウン処理を統一
+  /** カウントダウン処理 */
   useEffect(() => {
     // 音声ファイルの読み込みが完了し、かつ音声再生の準備ができている場合に実行
     if (phase === 'ready' && isSoundLoaded && isAudioReady) {
