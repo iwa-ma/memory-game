@@ -111,6 +111,8 @@ export const QuestionMode = ({
   const [hasMistakeInLevel, setHasMistakeInLevel] = useState(false);
   /** 現在の問題のスコアを管理する状態変数を追加 */
   const [currentQuestionScore, setCurrentQuestionScore] = useState(0);
+  /** コンボ数を管理する状態変数を追加 */
+  const [comboCount, setComboCount] = useState(0);
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -209,8 +211,23 @@ export const QuestionMode = ({
     // 入力の正誤結果を、管理配列に追加(現在の配列をコピーして新しい配列を作成)
     setAnswerResults(prev => [...prev, isCurrentInputCorrect]);
 
-    // 問題のスコアを設定（正解:50点、不正解:-20点）
-    const questionScore = isCurrentInputCorrect ? 50 : -20;
+    // コンボボーナスの計算
+    let comboBonus = 0;
+    if (isCurrentInputCorrect) {
+      // 正解の場合、コンボ数を増やす
+      const newComboCount = comboCount + 1;
+      setComboCount(newComboCount);
+      // コンボ数に応じてボーナスを計算（2コンボ以上でボーナス発生）
+      if (newComboCount >= 2) {
+        comboBonus = newComboCount * 10; // コンボ数 × 10点のボーナス
+      }
+    } else {
+      // 不正解の場合、コンボをリセット
+      setComboCount(0);
+    }
+
+    // 問題のスコアを設定（正解:50点、不正解:-20点）とコンボボーナスを加算
+    const questionScore = (isCurrentInputCorrect ? 50 : -20) + comboBonus;
     setCurrentQuestionScore(questionScore);
 
     // スコアを即座に更新
@@ -494,6 +511,7 @@ export const QuestionMode = ({
     setAnswerResults([]);
     setHasMistakeInLevel(false);
     setCurrentQuestionScore(0);
+    setComboCount(0);
   }, [level]);
 
   return (
@@ -516,6 +534,9 @@ export const QuestionMode = ({
         <Instruction>
           <h3>{questionVoice === 'animal1' ? '光った順番に鳴き声を押してください' : '光った順番に数字を押してください'}</h3>
           <h3>正解数: {correctCount} / 残り: {sequence.length - correctCount}</h3>
+          {comboCount >= 2 && (
+            <h3 style={{ color: '#4CAF50' }}>コンボ: {comboCount}（+{comboCount * 10}点）</h3>
+          )}
         </Instruction>
       )}
 
@@ -562,6 +583,7 @@ export const QuestionMode = ({
               isIntermediate={correctCount < sequence.length}
               noMistakeBonus={!hasMistakeInLevel && correctCount === sequence.length ? level * 500 : 0}
               questionScore={currentQuestionScore}
+              comboCount={comboCount}
             />
           )}
         </>

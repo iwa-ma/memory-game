@@ -81,6 +81,8 @@ type ResultModalProps = {
   noMistakeBonus?: number;
   /** 問題のスコア */
   questionScore?: number;
+  /** コンボ数 */
+  comboCount?: number;
 };
 
 /** 結果表示コンポーネント */
@@ -92,9 +94,12 @@ export const ResultModal = ({
   isIntermediate = false,
   noMistakeBonus = 0,
   questionScore = 0,
+  comboCount = 0,
 }: ResultModalProps) => {
   // レベルクリアスコアを計算
   const levelClearScore = level * 100;
+  // コンボボーナスを計算
+  const comboBonus = comboCount >= 2 ? comboCount * 10 : 0;
 
   return (
     <ModalOverlay>
@@ -120,9 +125,15 @@ export const ResultModal = ({
           </>
         )}
         {isIntermediate && (
-          <Message style={{ color: questionScore > 0 ? '#4CAF50' : '#ff4757' }}>
-            {questionScore > 0 ? `+${questionScore}点` : `${questionScore}点`}
-          </Message>
+          <>
+            <Message style={{ color: questionScore > 0 ? '#4CAF50' : '#ff4757' }}>
+              {questionScore > 0 ? `+${questionScore}点` : `${questionScore}点`}
+              <span style={{ fontSize: '0.9em', marginLeft: '0.5rem' }}>
+                （基本スコア: {questionScore - comboBonus}点
+                {comboBonus > 0 && ` + コンボボーナス: +${comboBonus}点`}）
+              </span>
+            </Message>
+          </>
         )}
         {!isIntermediate && (
           isCorrect ? (
