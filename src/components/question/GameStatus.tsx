@@ -47,12 +47,10 @@ type GameStatusProps = {
   score: number;
   /** 残りライフ */
   lives: number;
-  /** デバッグ用：ゲームをリセットする動作関数 */
-  onReset: () => void;
 };
 
 /** ゲームステータスコンポーネント */
-export const GameStatus = ({ level, score, lives, onReset }: GameStatusProps) => (
+export const GameStatus = ({ level, score, lives, }: GameStatusProps) => (
   <StatusContainer>
     <p>Level: {level}</p>
     <p>Score: {score}</p>
@@ -61,13 +59,5 @@ export const GameStatus = ({ level, score, lives, onReset }: GameStatusProps) =>
       <span>×</span>
       <span>{lives}</span>
     </LivesContainer>
-    <DebugButton
-      className="debug-button"
-      onClick={onReset}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-    >
-      リセット
-    </DebugButton>
   </StatusContainer>
 );

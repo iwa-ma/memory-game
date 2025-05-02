@@ -133,17 +133,6 @@ export const QuestionMode = ({
     }
   }, [level]);
 
-  /** デバッグ用：ゲームをリセットする処理 */
-  const handleReset = () => {
-    setPhase('preparing');
-    setCurrentIndex(-1);
-    setSequence([]);
-    setCountdown(3);
-    handleGenerateSequence();
-    setPhase('ready');
-    setIsAudioReady(false);
-  };
-
   /** 問題生成処理 */
   const handleGenerateSequence = () => {
     // 現在のレベルを使用して問題を生成
@@ -451,7 +440,7 @@ export const QuestionMode = ({
   return (
     <>
       {/* ゲームステータスコンポーネント */}
-      <GameStatus level={level} score={score} lives={remainingLives} onReset={handleReset} />
+      <GameStatus level={level} score={score} lives={remainingLives} />
 
       {/* カウントダウンモーダル */}
       {phase === 'ready' && (
