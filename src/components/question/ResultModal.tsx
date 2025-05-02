@@ -77,6 +77,14 @@ type ResultModalProps = {
   onEnd: () => void;
   /** 途中の正解かどうか */
   isIntermediate?: boolean;
+  /** ノーミスクリアボーナス */
+  noMistakeBonus?: number;
+  /** 問題のスコア */
+  questionScore?: number;
+  /** コンボ数 */
+  comboCount?: number;
+  /** 解答時間（秒） */
+  answerTime?: number;
 };
 
 /** 結果表示コンポーネント */
@@ -86,7 +94,18 @@ export const ResultModal = ({
   onContinue,
   onEnd,
   isIntermediate = false,
+  noMistakeBonus = 0,
+  questionScore = 0,
+  comboCount = 0,
+  answerTime = 0,
 }: ResultModalProps) => {
+  // レベルクリアスコアを計算
+  const levelClearScore = level * 100;
+  // コンボボーナスを計算
+  const comboBonus = comboCount >= 2 ? comboCount * 10 : 0;
+  // タイムボーナスを計算
+  const timeBonus = isCorrect ? (answerTime <= 2 ? 30 : answerTime <= 3 ? 15 : 0) : 0;
+
   return (
     <ModalOverlay>
       <ModalContent>
@@ -97,6 +116,33 @@ export const ResultModal = ({
               ? `レベル${level}をクリアしました！`
               : '残念！間違えました。'}
           </Message>
+        )}
+        {!isIntermediate && isCorrect && (
+          <>
+            <Message style={{ color: '#61dafb' }}>
+              レベルクリアスコア: +{levelClearScore}
+            </Message>
+            {noMistakeBonus > 0 && (
+              <Message style={{ color: '#4CAF50' }}>
+                ノーミスクリアボーナス: +{noMistakeBonus}
+              </Message>
+            )}
+          </>
+        )}
+        {isIntermediate && (
+          <>
+            <Message style={{ color: questionScore > 0 ? '#4CAF50' : '#ff4757' }}>
+              {questionScore > 0 ? `+${questionScore}点` : `${questionScore}点`}
+              <span style={{ fontSize: '0.9em', marginLeft: '0.5rem' }}>
+                （基本スコア: {questionScore - comboBonus - timeBonus}点
+                {comboBonus > 0 && ` + コンボボーナス: +${comboBonus}点`}
+                {timeBonus > 0 && ` + タイムボーナス: +${timeBonus}点`}）
+              </span>
+            </Message>
+            <Message style={{ fontSize: '0.9em', color: '#61dafb' }}>
+              解答時間: {answerTime.toFixed(1)}秒
+            </Message>
+          </>
         )}
         {!isIntermediate && (
           isCorrect ? (
