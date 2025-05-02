@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
 import { FaHeart } from "react-icons/fa";
 
 
@@ -10,17 +9,6 @@ const StatusContainer = styled.div`
   justify-content: center;
   gap: 1.5rem;
   margin-bottom: 1rem;
-`;
-
-const DebugButton = styled(motion.button)`
-  background-color: #ff4757;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  margin-left: 1rem;
 `;
 
 /** ライフ表示のスタイル */
