@@ -266,7 +266,8 @@ export const useSoundLoader = () => {
     console.log(`playSoundが呼び出されました (${soundName}):`, JSON.stringify({
       // 呼び出し元の情報
       caller: {
-        stackTrace: stackTrace?.split('\n').slice(2).join('\n')  // 最初の2行を除外
+        // スタックトレースを最初の5行のみに制限
+        stackTrace: stackTrace?.split('\n').slice(2, 7).join('\n')
       },
       // 音声ファイルの情報
       soundInfo: {
