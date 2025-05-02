@@ -58,6 +58,8 @@ type QuestionModeProps = {
   onGameEnd: () => void;
   /** 最終レベル */
   finalLevel: number;
+  /** phaseを親に渡すコールバック */
+  onPhaseChange?: (phase: string) => void;
 };
 
 /** 出題モードコンポーネント */
@@ -73,7 +75,8 @@ export const QuestionMode = ({
   onLevelUp,
   onScoreUpdate,
   onGameEnd,
-  finalLevel
+  finalLevel,
+  onPhaseChange
 }: QuestionModeProps) => {
   /** 音声の種類 */
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
@@ -540,6 +543,13 @@ export const QuestionMode = ({
     setComboCount(0);
     setAnswerStartTime(0);
   }, [level]);
+
+  /** phaseが変わるたびに親に通知 */
+  useEffect(() => {
+    if (onPhaseChange) {
+      onPhaseChange(phase);
+    }
+  }, [phase, onPhaseChange]);
 
   return (
     <>

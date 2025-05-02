@@ -104,6 +104,8 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   /** 初回読み込みフラグ */
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  /** phase管理 */
+  const [questionPhase, setQuestionPhase] = useState<string>('ready');
 
   const { isLoading, error } = useSoundLoader();
 
@@ -205,9 +207,10 @@ function App() {
   return (
     <div className="App">
       <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
-        <h1>記憶ゲーム</h1>
+        {/* スタート待機モードのみで表示 */}
         {gameMode === 'waiting' && (
           <>
+            <h1>記憶ゲーム</h1>
             <p>一緒に記憶力を試してみましょう！</p>
             <SoundNotice>
               ゲーム中音声が流れます。設定変更で音声がでないようにできます。
@@ -241,6 +244,7 @@ function App() {
             onScoreUpdate={handleScoreUpdate}
             onGameEnd={handleGameEnd}
             finalLevel={FINAL_LEVEL}
+            onPhaseChange={setQuestionPhase}
           />
         )}
       </div>
