@@ -113,6 +113,8 @@ export const QuestionMode = ({
   const [currentQuestionScore, setCurrentQuestionScore] = useState(0);
   /** コンボ数を管理する状態変数を追加 */
   const [comboCount, setComboCount] = useState(0);
+  /** 解答開始時間を管理する状態変数を追加 */
+  const [answerStartTime, setAnswerStartTime] = useState<number>(0);
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -211,6 +213,19 @@ export const QuestionMode = ({
     // 入力の正誤結果を、管理配列に追加(現在の配列をコピーして新しい配列を作成)
     setAnswerResults(prev => [...prev, isCurrentInputCorrect]);
 
+    // 解答時間を計算（ミリ秒を秒に変換）
+    const answerTime = (Date.now() - answerStartTime) / 1000;
+
+    // タイムボーナスの計算
+    let timeBonus = 0;
+    if (isCurrentInputCorrect) {
+      if (answerTime <= 2) {
+        timeBonus = 30;  // 2秒以内: +30点
+      } else if (answerTime <= 3) {
+        timeBonus = 15;  // 3秒以内: +15点
+      }
+    }
+
     // コンボボーナスの計算
     let comboBonus = 0;
     if (isCurrentInputCorrect) {
@@ -226,8 +241,8 @@ export const QuestionMode = ({
       setComboCount(0);
     }
 
-    // 問題のスコアを設定（正解:50点、不正解:-20点）とコンボボーナスを加算
-    const questionScore = (isCurrentInputCorrect ? 50 : -20) + comboBonus;
+    // 問題のスコアを設定（正解:50点、不正解:-20点）とボーナスを加算
+    const questionScore = (isCurrentInputCorrect ? 50 : -20) + comboBonus + timeBonus;
     setCurrentQuestionScore(questionScore);
 
     // スコアを即座に更新
@@ -264,6 +279,8 @@ export const QuestionMode = ({
           } else {
             // モーダルを非表示
             setShowResult(false);
+            // 次の問題の解答開始時間を設定
+            setAnswerStartTime(Date.now());
           }
           return newLives;
         });
@@ -304,6 +321,8 @@ export const QuestionMode = ({
     } else {
         // 途中の正解の場合
         setShowResult(false);
+        // 次の問題の解答開始時間を設定
+        setAnswerStartTime(Date.now());
     }
   };
 
@@ -505,6 +524,13 @@ export const QuestionMode = ({
     }
   };
 
+  // 解答フェーズに移行したときに最初の問題の解答開始時間を設定
+  useEffect(() => {
+    if (phase === 'answering') {
+      setAnswerStartTime(Date.now());
+    }
+  }, [phase]);
+
   // レベルが変更されたときやゲームがリセットされたときに正解数をリセット
   useEffect(() => {
     setCorrectCount(0);
@@ -512,6 +538,7 @@ export const QuestionMode = ({
     setHasMistakeInLevel(false);
     setCurrentQuestionScore(0);
     setComboCount(0);
+    setAnswerStartTime(0);
   }, [level]);
 
   return (
@@ -584,6 +611,7 @@ export const QuestionMode = ({
               noMistakeBonus={!hasMistakeInLevel && correctCount === sequence.length ? level * 500 : 0}
               questionScore={currentQuestionScore}
               comboCount={comboCount}
+              answerTime={(Date.now() - answerStartTime) / 1000}
             />
           )}
         </>
