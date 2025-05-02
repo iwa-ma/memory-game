@@ -79,6 +79,8 @@ type ResultModalProps = {
   isIntermediate?: boolean;
   /** ノーミスクリアボーナス */
   noMistakeBonus?: number;
+  /** 問題のスコア */
+  questionScore?: number;
 };
 
 /** 結果表示コンポーネント */
@@ -89,6 +91,7 @@ export const ResultModal = ({
   onEnd,
   isIntermediate = false,
   noMistakeBonus = 0,
+  questionScore = 0,
 }: ResultModalProps) => {
   // レベルクリアスコアを計算
   const levelClearScore = level * 100;
@@ -115,6 +118,11 @@ export const ResultModal = ({
               </Message>
             )}
           </>
+        )}
+        {isIntermediate && (
+          <Message style={{ color: questionScore > 0 ? '#4CAF50' : '#ff4757' }}>
+            {questionScore > 0 ? `+${questionScore}点` : `${questionScore}点`}
+          </Message>
         )}
         {!isIntermediate && (
           isCorrect ? (

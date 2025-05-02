@@ -109,6 +109,8 @@ export const QuestionMode = ({
   const [answerResults, setAnswerResults] = useState<boolean[]>([]);
   /** レベル内でのミスを管理する状態変数を追加 */
   const [hasMistakeInLevel, setHasMistakeInLevel] = useState(false);
+  /** 現在の問題のスコアを管理する状態変数を追加 */
+  const [currentQuestionScore, setCurrentQuestionScore] = useState(0);
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -206,6 +208,13 @@ export const QuestionMode = ({
 
     // 入力の正誤結果を、管理配列に追加(現在の配列をコピーして新しい配列を作成)
     setAnswerResults(prev => [...prev, isCurrentInputCorrect]);
+
+    // 問題のスコアを設定（正解:50点、不正解:-20点）
+    const questionScore = isCurrentInputCorrect ? 50 : -20;
+    setCurrentQuestionScore(questionScore);
+
+    // スコアを即座に更新
+    onScoreUpdate(score + questionScore);
 
     if (!isCurrentInputCorrect) {
         // 不正解の処理
@@ -453,6 +462,8 @@ export const QuestionMode = ({
     setCountdown(3);
     // レベル内のミス状態をリセット
     setHasMistakeInLevel(false);
+    // 問題のスコアをリセット
+    setCurrentQuestionScore(0);
     // レベルアップ
     onLevelUp();
     // 出題準備フェーズに移行
@@ -482,6 +493,7 @@ export const QuestionMode = ({
     setCorrectCount(0);
     setAnswerResults([]);
     setHasMistakeInLevel(false);
+    setCurrentQuestionScore(0);
   }, [level]);
 
   return (
@@ -547,8 +559,9 @@ export const QuestionMode = ({
               score={score}
               onContinue={handleContinue}
               onEnd={handleEndGame}
-              isIntermediate={isCorrect && correctCount < sequence.length}
+              isIntermediate={correctCount < sequence.length}
               noMistakeBonus={!hasMistakeInLevel && correctCount === sequence.length ? level * 500 : 0}
+              questionScore={currentQuestionScore}
             />
           )}
         </>
