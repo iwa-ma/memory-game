@@ -1,20 +1,81 @@
 import styled from 'styled-components';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
+import { motion, AnimatePresence } from 'framer-motion';
 
-/** 入力履歴のスタイル */
+/** 入力履歴枠のスタイル */
 const HistoryContainer = styled.div`
-  margin: 1rem 0;
-  padding: 1rem;
-  background-color: rgba(97, 218, 251, 0.1);
+  margin-top: 20px;
+  padding: 10px;
+  background-color: rgba(40, 44, 52, 0.8);
   border-radius: 8px;
+  
+  @media (max-width: 480px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    margin: 0;
+  }
 `;
 
-/** 入力履歴のタイトル */
-const HistoryTitle = styled.h3`
-  margin: 0 0 0.5rem 0;
+/** PC用の履歴パネル */
+const DesktopHistoryPanel = styled.div`
+  // PC用(PCでは表示)
+  @media (min-width: 481px) {
+    display: block;
+  }
+  // モバイル用(モバイルでは非表示)
+  @media (max-width: 480px) {
+    display: none;
+  }
+`;
+
+/** モバイル用の履歴パネル */
+const MobileHistoryPanel = styled(motion.div)`  
+  // PC用(PCでは非表示)
+  @media (min-width: 481px) {
+    display: none;
+  }
+  // モバイル用(モバイルでは表示)
+  @media (max-width: 480px) {
+    max-height: 40vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background-color: rgba(40, 44, 52, 0.95);
+    padding: 10px;
+  }
+`;
+
+/** 履歴表示ボタンのスタイル */
+const ToggleButton = styled.button`
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
   color: #61dafb;
-  text-align: center;
+  font-size: 1em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:focus {
+    outline: none;
+  }
+
+  // モバイル用
+  @media (max-width: 480px) {
+    background-color: rgba(40, 44, 52, 0.95);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 11;
+    margin: 0;
+    border-top: 1px solid rgba(97, 218, 251, 0.3);
+  }
 `;
 
 /** 入力履歴の数字と結果のコンテナ */
@@ -117,31 +178,60 @@ export const InputHistory = ({
   // 最新4つの開始インデックスを計算
   const startIndex = inputHistory.length;
 
+  const historyContent = (
+    <>
+      {recentInputs.map((num, idx) => (
+        <InputContainer key={idx}>
+          <SequenceNumber>{startIndex - idx}.</SequenceNumber>
+          <ResultLabel isCorrect={recentResults[idx]}>{recentResults[idx] ? '○' : '×'}</ResultLabel>
+          <InputNumber>{getDisplayText(num)}</InputNumber>
+        </InputContainer>
+      ))}
+      {showAllHistory && olderInputs.length > 0 && (
+        <AllInputs>
+          {olderInputs.map((num, idx) => (
+            <InputContainer key={idx}>
+              <SequenceNumber>{startIndex - recentInputs.length - idx}.</SequenceNumber>
+              <ResultLabel isCorrect={olderResults[idx]}>{olderResults[idx] ? '○' : '×'}</ResultLabel>
+              <InputNumber>{getDisplayText(num)}</InputNumber>
+            </InputContainer>
+          ))}
+        </AllInputs>
+      )}
+    </>
+  );
+
   return (
     <HistoryContainer>
-      <HistoryTitle onClick={onToggleHistory} style={{ cursor: 'pointer' }}>
+      <ToggleButton onClick={onToggleHistory}>
         入力履歴 {showAllHistory ? '▼' : '▲'}
-      </HistoryTitle>
-      <>
-        {recentInputs.map((num, idx) => (
-          <InputContainer key={idx}>
-            <SequenceNumber>{startIndex - idx}.</SequenceNumber>
-            <ResultLabel isCorrect={recentResults[idx]}>{recentResults[idx] ? '○' : '×'}</ResultLabel>
-            <InputNumber>{getDisplayText(num)}</InputNumber>
-          </InputContainer>
-        ))}
-        {showAllHistory && olderInputs.length > 0 && (
-          <AllInputs>
-            {olderInputs.map((num, idx) => (
-              <InputContainer key={idx}>
-                <SequenceNumber>{startIndex - recentInputs.length - idx}.</SequenceNumber>
-                <ResultLabel isCorrect={olderResults[idx]}>{olderResults[idx] ? '○' : '×'}</ResultLabel>
-                <InputNumber>{getDisplayText(num)}</InputNumber>
-              </InputContainer>
-            ))}
-          </AllInputs>
+      </ToggleButton>
+      
+      {/* PC用の表示 */}
+      <DesktopHistoryPanel>
+        {historyContent}
+      </DesktopHistoryPanel>
+
+      {/* モバイル用の表示（アニメーション付き） */}
+      <AnimatePresence>
+        {showAllHistory && (
+          <MobileHistoryPanel
+            // 初期状態
+            initial={{ height: 0, opacity: 0 }}
+            // 表示状態
+            animate={{ height: 'auto', opacity: 1 }}
+            // 非表示状態
+            exit={{ height: 0, opacity: 0 }}
+            // アニメーション設定
+            transition={{ 
+              duration: 0.3,
+              ease: "easeInOut"
+            }}
+          >
+            {historyContent}
+          </MobileHistoryPanel>
         )}
-      </>
+      </AnimatePresence>
     </HistoryContainer>
   );
 };
