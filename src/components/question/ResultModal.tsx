@@ -77,6 +77,8 @@ type ResultModalProps = {
   onEnd: () => void;
   /** 途中の正解かどうか */
   isIntermediate?: boolean;
+  /** ノーミスクリアボーナス */
+  noMistakeBonus?: number;
 };
 
 /** 結果表示コンポーネント */
@@ -86,6 +88,7 @@ export const ResultModal = ({
   onContinue,
   onEnd,
   isIntermediate = false,
+  noMistakeBonus = 0,
 }: ResultModalProps) => {
   return (
     <ModalOverlay>
@@ -96,6 +99,11 @@ export const ResultModal = ({
             {isCorrect
               ? `レベル${level}をクリアしました！`
               : '残念！間違えました。'}
+          </Message>
+        )}
+        {!isIntermediate && isCorrect && noMistakeBonus > 0 && (
+          <Message style={{ color: '#4CAF50' }}>
+            ノーミスクリアボーナス: +{noMistakeBonus}
           </Message>
         )}
         {!isIntermediate && (

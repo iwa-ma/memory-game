@@ -107,6 +107,8 @@ export const QuestionMode = ({
   const [correctCount, setCorrectCount] = useState(0);
   /** 各入力の正誤を管理する状態変数を追加 */
   const [answerResults, setAnswerResults] = useState<boolean[]>([]);
+  /** レベル内でのミスを管理する状態変数を追加 */
+  const [hasMistakeInLevel, setHasMistakeInLevel] = useState(false);
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -209,6 +211,8 @@ export const QuestionMode = ({
         // 不正解の処理
         setIsCorrect(false);
         setShowResult(true);
+        // レベル内でミスがあったことを記録
+        setHasMistakeInLevel(true);
 
         if (isSoundEnabled) {
           // 音声の長さを取得
@@ -268,8 +272,9 @@ export const QuestionMode = ({
         // レベルクリア
         // resultフェーズに移行
         setPhase('result');
-        // スコアを更新
-        onScoreUpdate(score + level * 100);
+        // スコアを更新（ノーミスクリアボーナスを含む）
+        const noMistakeBonus = !hasMistakeInLevel ? level * 500 : 0;
+        onScoreUpdate(score + level * 100 + noMistakeBonus);
     } else {
         // 途中の正解の場合
         setShowResult(false);
@@ -446,6 +451,8 @@ export const QuestionMode = ({
     setSequence([]);
     // カウントダウンを3秒にリセット
     setCountdown(3);
+    // レベル内のミス状態をリセット
+    setHasMistakeInLevel(false);
     // レベルアップ
     onLevelUp();
     // 出題準備フェーズに移行
@@ -474,6 +481,7 @@ export const QuestionMode = ({
   useEffect(() => {
     setCorrectCount(0);
     setAnswerResults([]);
+    setHasMistakeInLevel(false);
   }, [level]);
 
   return (
@@ -540,6 +548,7 @@ export const QuestionMode = ({
               onContinue={handleContinue}
               onEnd={handleEndGame}
               isIntermediate={isCorrect && correctCount < sequence.length}
+              noMistakeBonus={!hasMistakeInLevel && correctCount === sequence.length ? level * 500 : 0}
             />
           )}
         </>
