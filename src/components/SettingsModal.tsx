@@ -241,6 +241,7 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
             onChange={(e) => dispatch(setDifficultyLevel(e.target.value as 'easy' | 'normal' | 'hard'))}
             disabled={isSoundLoading}
           >
+            <option value="practice">{convertDifficulty('practice')}</option>
             <option value="easy">{convertDifficulty('easy')}</option>
             <option value="normal">{convertDifficulty('normal')}</option>
             <option value="hard">{convertDifficulty('hard')}</option>

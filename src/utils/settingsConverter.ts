@@ -15,6 +15,8 @@ export const convertSoundType = (soundType: string): string => {
 /** 難易度の変換 */
 export const convertDifficulty = (difficulty: string): string => {
   switch (difficulty) {
+    case 'practice':
+      return '練習';
     case 'easy':
       return '簡単';
     case 'normal':

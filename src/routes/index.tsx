@@ -60,6 +60,8 @@ const SoundNotice = styled.p`
 /** 難易度に応じた初期ライフ数を取得する関数 */
 const getInitialLives = (difficultyLevel: string): number => {
   switch (difficultyLevel) {
+    case 'practice':
+      return 999;
     case 'easy':
       return 20;
     case 'normal':
