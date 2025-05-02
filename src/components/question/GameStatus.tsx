@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
 import { FaHeart } from "react-icons/fa";
 
 
@@ -10,17 +9,6 @@ const StatusContainer = styled.div`
   justify-content: center;
   gap: 1.5rem;
   margin-bottom: 1rem;
-`;
-
-const DebugButton = styled(motion.button)`
-  background-color: #ff4757;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  margin-left: 1rem;
 `;
 
 /** ライフ表示のスタイル */
@@ -47,12 +35,10 @@ type GameStatusProps = {
   score: number;
   /** 残りライフ */
   lives: number;
-  /** デバッグ用：ゲームをリセットする動作関数 */
-  onReset: () => void;
 };
 
 /** ゲームステータスコンポーネント */
-export const GameStatus = ({ level, score, lives, onReset }: GameStatusProps) => (
+export const GameStatus = ({ level, score, lives, }: GameStatusProps) => (
   <StatusContainer>
     <p>Level: {level}</p>
     <p>Score: {score}</p>
@@ -61,13 +47,5 @@ export const GameStatus = ({ level, score, lives, onReset }: GameStatusProps) =>
       <span>×</span>
       <span>{lives}</span>
     </LivesContainer>
-    <DebugButton
-      className="debug-button"
-      onClick={onReset}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-    >
-      リセット
-    </DebugButton>
   </StatusContainer>
 );

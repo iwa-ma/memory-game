@@ -82,7 +82,8 @@ function App() {
   /** 難易度 */
   const difficultyLevel = useSelector((state: RootState) => state.settings.difficultyLevel);
   /** 数字ボタンの表示数設定(animal1の場合は4、それ以外の場合は10)  */
-  const numbers = Array.from({ length: questionVoice === 'animal1' ? 4 : 10 }, (_, i) => i);
+  const numbers = Array.from({ length: questionVoice === 'animal1' ? 4 : 9 }, (_, i) => i);
+
   /** 入力履歴の表示状態 */
   const [inputHistory, setInputHistory] = useState<number[]>([]);
   /** 入力履歴(すべて)の表示状態 */
