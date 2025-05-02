@@ -90,6 +90,9 @@ export const ResultModal = ({
   isIntermediate = false,
   noMistakeBonus = 0,
 }: ResultModalProps) => {
+  // レベルクリアスコアを計算
+  const levelClearScore = level * 100;
+
   return (
     <ModalOverlay>
       <ModalContent>
@@ -101,10 +104,17 @@ export const ResultModal = ({
               : '残念！間違えました。'}
           </Message>
         )}
-        {!isIntermediate && isCorrect && noMistakeBonus > 0 && (
-          <Message style={{ color: '#4CAF50' }}>
-            ノーミスクリアボーナス: +{noMistakeBonus}
-          </Message>
+        {!isIntermediate && isCorrect && (
+          <>
+            <Message style={{ color: '#61dafb' }}>
+              レベルクリアスコア: +{levelClearScore}
+            </Message>
+            {noMistakeBonus > 0 && (
+              <Message style={{ color: '#4CAF50' }}>
+                ノーミスクリアボーナス: +{noMistakeBonus}
+              </Message>
+            )}
+          </>
         )}
         {!isIntermediate && (
           isCorrect ? (
