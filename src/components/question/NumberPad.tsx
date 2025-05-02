@@ -7,15 +7,11 @@ import type { RootState } from '@/store/store';
 /** 数字ボタン枠のスタイル */
 const NumberGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(5, 1fr); /* デフォルトで5列 */
+  grid-template-columns: repeat(3, 1fr); /* PCでも3列に統一 */
   gap: 10px;
-  max-width: 500px;
+  max-width: 400px; /* 3列なので最大幅を少し狭く */
   margin: 0 auto;
   padding: 0 10px;
-
-  @media (max-width: 480px) { /* スマートフォンサイズで3列に変更 */
-    grid-template-columns: repeat(3, 1fr);
-  }
 `;
 
 /** 数字ボタンのスタイル */
