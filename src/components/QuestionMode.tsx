@@ -283,43 +283,46 @@ export const QuestionMode = ({
       const showSequence = async () => {
         try {
           for (let i = 0; i < sequence.length; i++) {
-            // ボタンを光らせる動作はmotion.buttonのanimateプロパティで行う、
-            // setCurrentIndexで指定した添え字の数字が対象。
-            setCurrentIndex(i);  // ボタンを光らせる(NumberPad.tsxで該当Indexのボタン色変更)
+            setCurrentIndex(i);
             
-            // 音声を再生
-            try {
-              let soundName = '';
-              
-              if (questionVoice === 'animal1') {
-                switch (sequence[i]) {
-                  case 0:
-                    soundName = 'cat1';
-                    break;
-                  case 1:
-                    soundName = 'cat2';
-                    break;
-                  case 2:
-                    soundName = 'cat3';
-                    break;
-                  case 3:
-                    soundName = 'cat4';
-                    break;
+            // 音声が有効な場合、音声を再生
+            if (isSoundEnabled) {
+              try {
+                let soundName = '';
+                
+                if (questionVoice === 'animal1') {
+                  switch (sequence[i]) {
+                    case 0:
+                      soundName = 'cat1';
+                      break;
+                    case 1:
+                      soundName = 'cat2';
+                      break;
+                    case 2:
+                      soundName = 'cat3';
+                      break;
+                    case 3:
+                      soundName = 'cat4';
+                      break;
+                  }
+                } else {
+                  soundName = `num${sequence[i]}`;
                 }
-              } else {
-                soundName = `num${sequence[i]}`;
+
+                // 音声の待機時間を計算
+                const displayDuration = (getSoundDuration(soundName) * 1000) + (isMobileDevice() ? 500 : 300);
+
+                // 音声の再生と表示時間の待機を同時に開始
+                await Promise.all([
+                  playSound(soundName),
+                  new Promise(resolve => setTimeout(resolve, displayDuration))
+                ]);
+              } catch (error) {
+                console.warn('音声の再生に失敗しました:', error);
               }
-
-              // 音声の待機時間を計算(音声の長さを1000倍してミリ秒に変換 + バッファ値:モバイル端末の場合は500ms,PCの場合は300ms)
-              const displayDuration = (getSoundDuration(soundName) * 1000) + (isMobileDevice() ? 500 : 300);
-
-              // 音声の再生と表示時間の待機を同時に開始
-              await Promise.all([
-                playSound(soundName),
-                new Promise(resolve => setTimeout(resolve, displayDuration))
-              ]);
-            } catch (error) {
-              console.warn('音声の再生に失敗しました:', error);
+            } else {
+              // 音声無効時は表示時間のみ待機（1.3秒）
+              await new Promise(resolve => setTimeout(resolve, 1300));
             }
             
             // ボタンを消灯
