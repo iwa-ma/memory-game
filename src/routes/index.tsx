@@ -203,7 +203,7 @@ function App() {
   }
 
   return (
-    <div className="App">
+    <div className={`App${gameMode !== 'waiting' ? ' not-waiting' : ''}`}>
       <header className={`game-header ${gameMode === 'waiting' ? 'with-margin' : ''}`}>
         {/* スタート待機モードのみで表示 */}
         {gameMode === 'waiting' && (
