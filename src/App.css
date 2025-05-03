@@ -14,6 +14,14 @@
   padding: 0;
 }
 
+/* 要素を上に寄せる（モバイル時のみ適用） */
+@media (max-width: 600px) {
+  .App.not-waiting {
+    justify-content: flex-start;
+  }
+}
+
+/* ゲームヘッダー */
 .game-header {
   min-height: 10vh;
   width: 100%;
@@ -27,8 +35,17 @@
   box-sizing: border-box;
 }
 
+/* ゲームヘッダーにマージンがある場合 */
 .game-header.with-margin {
   margin-bottom: 1rem;
+}
+
+/* スタート待機モードのみで表示（モバイル時のみ適用） */
+@media (max-width: 600px) {
+  .game-header:not(.with-margin) {
+    min-height: 0;
+    padding: 0;
+  }
 }
 
 .game-area {
