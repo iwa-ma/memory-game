@@ -162,8 +162,8 @@ export const QuestionMode = ({
           countdown: ['3', '2', '1', '0', 'start'],
           // 音声タイプ別の音声
           animal1: ['cat1', 'cat2', 'cat3', 'cat4'],
-          human1: Array.from({ length: 9 }, (_, i) => `num${i}`),
-          human2: Array.from({ length: 9 }, (_, i) => `num${i}`)
+          human1: Array.from({ length: numbers.length }, (_, i) => `num${i}`),
+          human2: Array.from({ length: numbers.length }, (_, i) => `num${i}`)
         };
 
         // 必要な音声ファイルを準備

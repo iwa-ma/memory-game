@@ -76,6 +76,22 @@ const getInitialLives = (difficultyLevel: string): number => {
 /** 最終レベル */
 const FINAL_LEVEL = 10;
 
+/** 難易度に応じた数字ボタン数と出題数を取得する関数 */
+const getDifficultySettings = (difficulty: string): { buttonCount: number; maxNumber: number } => {
+  switch (difficulty) {
+    case 'practice':
+      return { buttonCount: 4, maxNumber: 3 }; // 練習モードはEasyと同じ
+    case 'easy':
+      return { buttonCount: 4, maxNumber: 3 }; // 0-3（4種類）
+    case 'normal':
+      return { buttonCount: 5, maxNumber: 4 }; // 0-4（5種類）
+    case 'hard':
+      return { buttonCount: 6, maxNumber: 5 }; // 0-5（6種類）
+    default:
+      return { buttonCount: 4, maxNumber: 3 }; // デフォルトはEasyと同じ
+  }
+};
+
 function App() {
   /** 開始レベル */
   const startLevel = useSelector((state: RootState) => state.settings.startLevel);
@@ -85,8 +101,14 @@ function App() {
   const difficultyLevel = useSelector((state: RootState) => state.settings.difficultyLevel);
   /** 音声の有効/無効 */
   const soundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
-  /** 数字ボタンの表示数設定(animal1の場合は4、それ以外の場合は10)  */
-  const numbers = Array.from({ length: questionVoice === 'animal1' ? 4 : 9 }, (_, i) => i);
+
+  // 難易度に応じたボタン数を取得
+  const { buttonCount } = getDifficultySettings(difficultyLevel);
+  // 音声タイプと難易度に応じた数字ボタンの配列を生成(animal1の場合は4、それ以外の場合は難易度に応じたボタン数)
+  const numbers = Array.from(
+    { length: questionVoice === 'animal1' ? 4 : buttonCount }, 
+    (_, i) => i
+  );
 
   /** 入力履歴の表示状態 */
   const [inputHistory, setInputHistory] = useState<number[]>([]);
