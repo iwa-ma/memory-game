@@ -15,6 +15,7 @@ import { useSoundLoader } from '@/hooks/useSoundLoader';
 import { useGameState } from '@/hooks/useGameState';
 import { useGameResult } from '@/hooks/useGameResult';
 import { useGameProgress } from '@/hooks/useGameProgress';
+import { useGameScore } from '@/hooks/useGameScore';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -91,14 +92,6 @@ export const QuestionMode = ({
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
   /** 音声再生の準備状態 */
   const [isAudioReady, setIsAudioReady] = useState(false);
-  /** レベル内でのミスを管理する状態変数を追加 */
-  const [hasMistakeInLevel, setHasMistakeInLevel] = useState(false);
-  /** 現在の問題のスコアを管理する状態変数を追加 */
-  const [currentQuestionScore, setCurrentQuestionScore] = useState(0);
-  /** コンボ数を管理する状態変数を追加 */
-  const [comboCount, setComboCount] = useState(0);
-  /** 解答開始時間を管理する状態変数を追加 */
-  const [answerStartTime, setAnswerStartTime] = useState<number>(0);
 
   // useGameStateフックを使用
   const {
@@ -129,6 +122,19 @@ export const QuestionMode = ({
     addAnswerResult,
     resetProgress
   } = useGameProgress(lives);
+
+  // useGameScoreフックを使用
+  const {
+    hasMistakeInLevel,
+    currentQuestionScore,
+    comboCount,
+    answerStartTime,
+    setMistake,
+    setQuestionScore,
+    updateCombo,
+    setStartTime,
+    resetScore
+  } = useGameScore();
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -236,20 +242,19 @@ export const QuestionMode = ({
     let comboBonus = 0;
     if (isCurrentInputCorrect) {
       // 正解の場合、コンボ数を増やす
-      const newComboCount = comboCount + 1;
-      setComboCount(newComboCount);
+      updateCombo(true);
       // コンボ数に応じてボーナスを計算（2コンボ以上でボーナス発生）
-      if (newComboCount >= 2) {
-        comboBonus = newComboCount * 10; // コンボ数 × 10点のボーナス
+      if (comboCount + 1 >= 2) {
+        comboBonus = (comboCount + 1) * 10; // コンボ数 × 10点のボーナス
       }
     } else {
       // 不正解の場合、コンボをリセット
-      setComboCount(0);
+      updateCombo(false);
     }
 
     // 問題のスコアを設定（正解:50点、不正解:-20点）とボーナスを加算
     const questionScore = (isCurrentInputCorrect ? 50 : -20) + comboBonus + timeBonus;
-    setCurrentQuestionScore(questionScore);
+    setQuestionScore(questionScore);
 
     // スコアを即座に更新
     onScoreUpdate(score + questionScore);
@@ -261,7 +266,7 @@ export const QuestionMode = ({
           showResult: true
         });
         // レベル内でミスがあったことを記録
-        setHasMistakeInLevel(true);
+        setMistake(true);
 
         if (isSoundEnabled) {
           // 音声の長さを取得
@@ -288,7 +293,7 @@ export const QuestionMode = ({
           // モーダルを非表示
           resetResultDisplay();
           // 次の問題の解答開始時間を設定
-          setAnswerStartTime(Date.now());
+          setStartTime(Date.now());
         }
         return;
     }
@@ -329,7 +334,7 @@ export const QuestionMode = ({
         // 途中の正解の場合
         resetResultDisplay();
         // 次の問題の解答開始時間を設定
-        setAnswerStartTime(Date.now());
+        setStartTime(Date.now());
     }
   };
 
@@ -482,9 +487,7 @@ export const QuestionMode = ({
     // 問題をリセット
     setCountdown(3);
     // レベル内のミス状態をリセット
-    setHasMistakeInLevel(false);
-    // 問題のスコアをリセット
-    setCurrentQuestionScore(0);
+    resetScore();
     // レベルアップ
     onLevelUp();
     // 出題準備フェーズに移行
@@ -511,17 +514,14 @@ export const QuestionMode = ({
   // 解答フェーズに移行したときに最初の問題の解答開始時間を設定
   useEffect(() => {
     if (gameState.phase === 'answering') {
-      setAnswerStartTime(Date.now());
+      setStartTime(Date.now());
     }
   }, [gameState.phase]);
 
   // レベルが変更されたときのリセット処理
   useEffect(() => {
     resetProgress();
-    setHasMistakeInLevel(false);
-    setCurrentQuestionScore(0);
-    setComboCount(0);
-    setAnswerStartTime(0);
+    resetScore();
   }, [level]);
 
   return (
