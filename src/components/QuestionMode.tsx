@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { GameStatus } from '@/components/question/GameStatus';
 import { CountdownModal } from '@/components/question/CountdownModal';
@@ -12,6 +12,7 @@ import { isMobileDevice } from '@/utils/deviceUtils';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { useSoundLoader } from '@/hooks/useSoundLoader';
+import { useGameState } from '@/hooks/useGameState';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -83,15 +84,25 @@ export const QuestionMode = ({
   const startLevel = useSelector((state: RootState) => state.settings.startLevel);
   /** 難易度 */
   const difficulty = useSelector((state: RootState) => state.settings.difficultyLevel);
-  /** 問題の数字配列 */
-  const [sequence, setSequence] = useState<number[]>([]);
-  /** 現在光らせているボタンのインデックス */
-  const [currentIndex, setCurrentIndex] = useState<number>(-1);
-  /** 出題フェーズの状態管理 */
-  const [phase, setPhase] = useState<'preparing' | 'ready' | 'showing' | 'answering' | 'result'>('ready');
-  /** カウントダウン用の状態を修正 */
-  const [countdown, setCountdown] = useState<number | 'Start'>(3);
-  /** 結果モーダルの表示状態 */
+
+  // useGameStateフックを使用
+  const {
+    /** ゲームの状態 */
+    state: gameState,
+    /** フェーズを更新する関数 */
+    setPhase,
+    /** カウントダウンを更新する関数 */
+    setCountdown,
+    /** 現在のインデックスを更新する関数 */
+    setCurrentIndex,
+    /** シーケンスを生成する関数 */
+    handleGenerateSequence
+  } = useGameState({
+    numbers,
+    level
+  });
+
+  // 以下の状態は一時的に残しておく（次のフェーズで移動予定）
   const [showResult, setShowResult] = useState(false);
   /** 正解かどうかの状態 */
   const [isCorrect, setIsCorrect] = useState(false);
@@ -128,7 +139,7 @@ export const QuestionMode = ({
 
   // 初回マウント時の問題生成
   useEffect(() => {
-    if (phase === 'ready' && sequence.length === 0) {
+    if (gameState.phase === 'ready' && gameState.sequence.length === 0) {
       handleGenerateSequence();
       prepareAudio();
     }
@@ -136,18 +147,10 @@ export const QuestionMode = ({
 
   // levelが変更されたときに問題を生成
   useEffect(() => {
-    if (phase === 'preparing') {
+    if (gameState.phase === 'preparing') {
       handleGenerateSequence();
     }
   }, [level]);
-
-  /** 問題生成処理 */
-  const handleGenerateSequence = () => {
-    // 現在のレベルを使用して問題を生成
-    const newSequence = generateSequence(level, numbers.length);
-    setSequence(newSequence);
-    return newSequence;
-  };
 
   /** 音声再生の準備を行う関数 */
   const prepareAudio = async () => {
@@ -205,7 +208,7 @@ export const QuestionMode = ({
   /** 解答を検証する関数 */
   const validateAnswer = async (input: number) => {    
     // 現在の正解数に基づいて期待される数字を取得
-    const expectedNumber = sequence[correctCount];
+    const expectedNumber = gameState.sequence[correctCount];
     
     // 入力値が期待される数字と一致するか
     const isCurrentInputCorrect = input === expectedNumber;
@@ -311,7 +314,7 @@ export const QuestionMode = ({
     setCorrectCount(newCorrectCount);
     
     // 正解数が目標の長さに達したかチェック
-    if (newCorrectCount === sequence.length) {
+    if (newCorrectCount === gameState.sequence.length) {
         // レベルクリア
         // resultフェーズに移行
         setPhase('result');
@@ -329,10 +332,10 @@ export const QuestionMode = ({
   /** 数字を順番に光らせる処理 */
   useEffect(() => {
     // showingフェーズで、出題数字が存在する場合に実行
-    if (phase === 'showing' && sequence.length > 0) {
+    if (gameState.phase === 'showing' && gameState.sequence.length > 0) {
       const showSequence = async () => {
         try {
-          for (let i = 0; i < sequence.length; i++) {
+          for (let i = 0; i < gameState.sequence.length; i++) {
             setCurrentIndex(i);
             
             // 音声が有効な場合、音声を再生
@@ -341,7 +344,7 @@ export const QuestionMode = ({
                 let soundName = '';
                 
                 if (questionVoice === 'animal1') {
-                  switch (sequence[i]) {
+                  switch (gameState.sequence[i]) {
                     case 0:
                       soundName = 'cat1';
                       break;
@@ -356,7 +359,7 @@ export const QuestionMode = ({
                       break;
                   }
                 } else {
-                  soundName = `num${sequence[i]}`;
+                  soundName = `num${gameState.sequence[i]}`;
                 }
 
                 // 音声の待機時間を計算
@@ -379,7 +382,7 @@ export const QuestionMode = ({
             setCurrentIndex(-1);
             
             // 次の数字まで待機（最後の数字の場合は待機しない）
-            if (i < sequence.length - 1) {
+            if (i < gameState.sequence.length - 1) {
               // 次の音声の準備時間（0.3秒）
               await new Promise(resolve => setTimeout(resolve, 300));
             }
@@ -400,90 +403,72 @@ export const QuestionMode = ({
       };
       showSequence();
     }
-  }, [phase, sequence]);
+  }, [gameState.phase, gameState.sequence]);
 
-  /** カウントダウン処理 */
+  /** カウントダウン処理（再レンダリング時の音声重複再生を防ぐ） */
+  const countdownRef = useRef<{
+    isRunning: boolean;
+  }>({ isRunning: false });
+
   useEffect(() => {
     // 音声ファイルの読み込みが完了し、かつ音声再生の準備ができている場合に実行
-    if (phase === 'ready' && isSoundLoaded && isAudioReady) {
+    if (gameState.phase === 'ready' && isSoundLoaded && isAudioReady && !countdownRef.current.isRunning) {
       // 問題生成（初回マウント時のみ）
-      if (sequence.length === 0) {
+      if (gameState.sequence.length === 0) {
         handleGenerateSequence();
       }
 
-      // 出題前のカウントダウン処理
-      const startCountdown = async () => {
-        try {
-          setCountdown(3);
-          const duration3 = getSoundDuration('3');
-          if (isSoundEnabled) {
-            // 音声の再生と同時に待機を開始
-            await Promise.all([
-              playSound('3'),
-              new Promise(resolve => setTimeout(resolve, duration3 * 1000 + (isMobileDevice() ? 300 : 0)))
-            ]);
-          } else {
-            // 音声が無効な場合は音声の長さと同じ時間待機
-            await new Promise(resolve => setTimeout(resolve, duration3 * 1000));
-          }
+      // カウントダウン開始フラグを設定
+      countdownRef.current.isRunning = true;
 
-          setCountdown(2);
-          const duration2 = getSoundDuration('2');
-          if (isSoundEnabled) {
-            await Promise.all([
-              playSound('2'),
-              new Promise(resolve => setTimeout(resolve, duration2 * 1000 + (isMobileDevice() ? 300 : 0)))
-            ]);
-          } else {
-            await new Promise(resolve => setTimeout(resolve, duration2 * 1000));
-          }
+      // カウントダウン開始
+      const countdownValues: (number | 'Start')[] = [3, 2, 1, 0, 'Start'];
+      let currentIndex = 0;
 
-          setCountdown(1);
-          const duration1 = getSoundDuration('1');
-          if (isSoundEnabled) {
-            await Promise.all([
-              playSound('1'),
-              new Promise(resolve => setTimeout(resolve, duration1 * 1000 + (isMobileDevice() ? 300 : 0)))
-            ]);
-          } else {
-            await new Promise(resolve => setTimeout(resolve, duration1 * 1000));
+      // カウントダウン音声を再生する関数
+      const playCountdownSound = async (value: number | 'Start') => {
+        if (isSoundEnabled) {
+          try {
+            const soundName = value === 'Start' ? 'start' : value.toString();
+            // 音声を再生
+            await playSound(soundName);
+          } catch (error) {
+            console.warn('カウントダウン音声の再生に失敗しました:', error);
           }
-
-          setCountdown(0);
-          const duration0 = getSoundDuration('0');
-          if (isSoundEnabled) {
-            await Promise.all([
-              playSound('0'),
-              new Promise(resolve => setTimeout(resolve, duration0 * 1000 + (isMobileDevice() ? 300 : 0)))
-            ]);
-          } else {
-            await new Promise(resolve => setTimeout(resolve, duration0 * 1000));
-          }
-
-          setCountdown('Start');
-          const durationStart = getSoundDuration('start');
-          if (isSoundEnabled) {
-            await Promise.all([
-              playSound('start'),
-              new Promise(resolve => setTimeout(resolve, durationStart * 1000 + (isMobileDevice() ? 300 : 0)))
-            ]);
-          } else {
-            await new Promise(resolve => setTimeout(resolve, durationStart * 1000));
-          }
-
-          setPhase('showing');
-          setCountdown(3);
-        } catch (error) {
-          console.error('カウントダウン中にエラーが発生しました:', error);
-          // エラーが発生しても次のフェーズに進む
-          setPhase('showing');
         }
       };
 
-      // 音声ファイルの読み込みが完了したらすぐにカウントダウンを開始
-      startCountdown();
+      // カウントダウンを処理する関数
+      const processCountdown = async () => {
+        if (!countdownRef.current.isRunning) return;  
+
+        // カウントダウンの値が存在する場合
+        if (currentIndex < countdownValues.length) {
+          const currentValue = countdownValues[currentIndex];
+          // カウントダウンの値を設定
+          setCountdown(currentValue);
+          // カウントダウン音声を再生
+          await playCountdownSound(currentValue);
+          // カウントダウンインデックスをインクリメント
+          currentIndex++;
+          // 次のカウントダウンを処理
+          processCountdown();
+        } else {
+          // カウントダウン終了後、showingフェーズに移行
+          setPhase('showing');
+          // カウントダウン開始フラグをリセット
+          countdownRef.current.isRunning = false;
+        }
+      };
+
+      // カウントダウン開始
+      processCountdown();
+
+      return () => {
+        countdownRef.current.isRunning = false;
+      };
     }
-  }, [phase, isSoundLoaded, isAudioReady]);
+  }, [gameState.phase, isSoundLoaded, isAudioReady]);
 
   /** 結果表示モーダルで「次のレベルへ」クリック処理 */
   const handleContinue = () => {
@@ -493,8 +478,6 @@ export const QuestionMode = ({
     // ボタンを消灯
     setCurrentIndex(-1);
     // 問題をリセット
-    setSequence([]);
-    // カウントダウンを3秒にリセット
     setCountdown(3);
     // レベル内のミス状態をリセット
     setHasMistakeInLevel(false);
@@ -516,7 +499,7 @@ export const QuestionMode = ({
 
   // 解答フェーズで、数字クリック時の処理
   const handleNumberClick = async (number: number) => {
-    if (phase === 'answering') {
+    if (gameState.phase === 'answering') {
       // 数字クリック動作関数を実行
       onNumberClick(number);
       // 解答を検証
@@ -526,10 +509,10 @@ export const QuestionMode = ({
 
   // 解答フェーズに移行したときに最初の問題の解答開始時間を設定
   useEffect(() => {
-    if (phase === 'answering') {
+    if (gameState.phase === 'answering') {
       setAnswerStartTime(Date.now());
     }
-  }, [phase]);
+  }, [gameState.phase]);
 
   // レベルが変更されたときやゲームがリセットされたときに正解数をリセット
   useEffect(() => {
@@ -547,8 +530,8 @@ export const QuestionMode = ({
       <GameStatus level={level} score={score} lives={remainingLives} />
 
       {/* カウントダウンモーダル */}
-      {phase === 'ready' && (
-        <CountdownModal level={level} countdown={countdown} />
+      {gameState.phase === 'ready' && (
+        <CountdownModal level={level} countdown={gameState.countdown} />
       )}
 
       {/* 解答モードへの移行を示すモーダル */}
@@ -557,10 +540,10 @@ export const QuestionMode = ({
       )}
 
       {/* 解答フェーズの表示 */}
-      {phase === 'answering' && (
+      {gameState.phase === 'answering' && (
         <Instruction>
           <h3>{questionVoice === 'animal1' ? '光った順番に鳴き声を押してください' : '光った順番に数字を押してください'}</h3>
-          <h3>正解数: {correctCount} / 残り: {sequence.length - correctCount}</h3>
+          <h3>正解数: {correctCount} / 残り: {gameState.sequence.length - correctCount}</h3>
           {comboCount >= 2 && (
             <h3 style={{ color: '#4CAF50' }}>コンボ: {comboCount}（+{comboCount * 10}点）</h3>
           )}
@@ -570,9 +553,9 @@ export const QuestionMode = ({
       {/* 数字ボタンコンポーネント */}
       <NumberPad
         numbers={numbers}
-        currentIndex={currentIndex}
-        sequence={sequence}
-        phase={phase}
+        currentIndex={gameState.currentIndex}
+        sequence={gameState.sequence}
+        phase={gameState.phase}
         onNumberClick={handleNumberClick}
       />
 
@@ -588,7 +571,7 @@ export const QuestionMode = ({
       {showResult && (
         <>
           {/* 最終レベルクリア時またはゲームオーバー時はLastResultModalを表示 */}
-          {(level === finalLevel && isCorrect && correctCount === sequence.length) || 
+          {(level === finalLevel && isCorrect && correctCount === gameState.sequence.length) || 
            (remainingLives === 0 && !isCorrect) ? (
             <LastResultModal
               finalLevel={level}
@@ -607,8 +590,8 @@ export const QuestionMode = ({
               score={score}
               onContinue={handleContinue}
               onEnd={handleEndGame}
-              isIntermediate={correctCount < sequence.length}
-              noMistakeBonus={!hasMistakeInLevel && correctCount === sequence.length ? level * 500 : 0}
+              isIntermediate={correctCount < gameState.sequence.length}
+              noMistakeBonus={!hasMistakeInLevel && correctCount === gameState.sequence.length ? level * 500 : 0}
               questionScore={currentQuestionScore}
               comboCount={comboCount}
               answerTime={(Date.now() - answerStartTime) / 1000}
