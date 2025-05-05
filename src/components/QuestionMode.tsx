@@ -13,6 +13,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { useSoundLoader } from '@/hooks/useSoundLoader';
 import { useGameState } from '@/hooks/useGameState';
+import { useGameResult } from '@/hooks/useGameResult';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -102,37 +103,12 @@ export const QuestionMode = ({
     level
   });
 
-  // 以下の状態は一時的に残しておく（次のフェーズで移動予定）
-  /** 結果表示の状態型 */
-  type ResultDisplayState = {
-    /** 結果モーダルの表示状態 */
-    showResult: boolean;
-    /** 正解かどうかの状態 */
-    isCorrect: boolean;
-    /** 解答モードへの移行を示すモーダルの表示状態 */
-    showAnswerMode: boolean;
-  };
-
-  /** 結果表示の状態 */
-  const [resultDisplay, setResultDisplay] = useState<ResultDisplayState>({
-    showResult: false,
-    isCorrect: false,
-    showAnswerMode: false
-  });
-
-  /** 結果表示の状態を更新する関数 */
-  const updateResultDisplay = (updates: Partial<ResultDisplayState>) => {
-    setResultDisplay(prev => ({ ...prev, ...updates }));
-  };
-
-  /** 結果表示の状態をリセットする関数 */
-  const resetResultDisplay = () => {
-    setResultDisplay({
-      showResult: false,
-      isCorrect: false,
-      showAnswerMode: false
-    });
-  };
+  // useGameResultフックを使用
+  const {
+    resultDisplay,
+    updateResultDisplay,
+    resetResultDisplay
+  } = useGameResult();
 
   /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
