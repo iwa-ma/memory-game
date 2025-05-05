@@ -103,11 +103,37 @@ export const QuestionMode = ({
   });
 
   // 以下の状態は一時的に残しておく（次のフェーズで移動予定）
-  const [showResult, setShowResult] = useState(false);
-  /** 正解かどうかの状態 */
-  const [isCorrect, setIsCorrect] = useState(false);
-  /** 解答モードへの移行を示すモーダルの表示状態 */
-  const [showAnswerMode, setShowAnswerMode] = useState(false);
+  /** 結果表示の状態型 */
+  type ResultDisplayState = {
+    /** 結果モーダルの表示状態 */
+    showResult: boolean;
+    /** 正解かどうかの状態 */
+    isCorrect: boolean;
+    /** 解答モードへの移行を示すモーダルの表示状態 */
+    showAnswerMode: boolean;
+  };
+
+  /** 結果表示の状態 */
+  const [resultDisplay, setResultDisplay] = useState<ResultDisplayState>({
+    showResult: false,
+    isCorrect: false,
+    showAnswerMode: false
+  });
+
+  /** 結果表示の状態を更新する関数 */
+  const updateResultDisplay = (updates: Partial<ResultDisplayState>) => {
+    setResultDisplay(prev => ({ ...prev, ...updates }));
+  };
+
+  /** 結果表示の状態をリセットする関数 */
+  const resetResultDisplay = () => {
+    setResultDisplay({
+      showResult: false,
+      isCorrect: false,
+      showAnswerMode: false
+    });
+  };
+
   /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
   /** 音声再生の準備状態 */
@@ -253,8 +279,10 @@ export const QuestionMode = ({
 
     if (!isCurrentInputCorrect) {
         // 不正解の処理
-        setIsCorrect(false);
-        setShowResult(true);
+        updateResultDisplay({
+          isCorrect: false,
+          showResult: true
+        });
         // レベル内でミスがあったことを記録
         setHasMistakeInLevel(true);
 
@@ -278,10 +306,13 @@ export const QuestionMode = ({
           const newLives = Math.max(0, prev - 1);
           if (newLives === 0) {
             setPhase('result');
-            setIsCorrect(false);  // ゲームオーバー時は不正解として扱う
+            updateResultDisplay({
+              isCorrect: false,
+              showResult: true
+            });
           } else {
             // モーダルを非表示
-            setShowResult(false);
+            resetResultDisplay();
             // 次の問題の解答開始時間を設定
             setAnswerStartTime(Date.now());
           }
@@ -291,8 +322,10 @@ export const QuestionMode = ({
     }
 
     // 正解の場合
-    setIsCorrect(true);
-    setShowResult(true);
+    updateResultDisplay({
+      isCorrect: true,
+      showResult: true
+    });
 
     if (isSoundEnabled) {
       // 音声の長さを取得
@@ -323,7 +356,7 @@ export const QuestionMode = ({
         onScoreUpdate(score + level * 100 + noMistakeBonus);
     } else {
         // 途中の正解の場合
-        setShowResult(false);
+        resetResultDisplay();
         // 次の問題の解答開始時間を設定
         setAnswerStartTime(Date.now());
     }
@@ -391,12 +424,10 @@ export const QuestionMode = ({
           console.error('シーケンス表示中にエラーが発生しました:', error);
         } finally {
           // 解答モードへの移行を示すモーダルを表示
-          setShowAnswerMode(true);
+          updateResultDisplay({ showAnswerMode: true });
           // 1.5秒後に解答モードに移行
           setTimeout(() => {
-            // 解答モードへの移行を示すモーダルを非表示
-            setShowAnswerMode(false);
-            // 解答モードに移行
+            resetResultDisplay();
             setPhase('answering');
           }, 1500);
         }
@@ -474,7 +505,7 @@ export const QuestionMode = ({
   const handleContinue = () => {
     console.log('handleContinue');
     // 結果表示モーダルを非表示
-    setShowResult(false);
+    resetResultDisplay();
     // ボタンを消灯
     setCurrentIndex(-1);
     // 問題をリセット
@@ -493,7 +524,7 @@ export const QuestionMode = ({
   const handleEndGame = () => {
     setCorrectCount(0);
     setAnswerResults([]);
-    setShowResult(false);
+    resetResultDisplay();
     onGameEnd();
   };
 
@@ -535,7 +566,7 @@ export const QuestionMode = ({
       )}
 
       {/* 解答モードへの移行を示すモーダル */}
-      {showAnswerMode && (
+      {resultDisplay.showAnswerMode && (
         <AnswerStartModal level={level} />
       )}
 
@@ -568,11 +599,11 @@ export const QuestionMode = ({
       />
 
       {/* 結果表示コンポーネント　showResultがtrueの場合に表示 */}
-      {showResult && (
+      {resultDisplay.showResult && (
         <>
           {/* 最終レベルクリア時またはゲームオーバー時はLastResultModalを表示 */}
-          {(level === finalLevel && isCorrect && correctCount === gameState.sequence.length) || 
-           (remainingLives === 0 && !isCorrect) ? (
+          {(level === finalLevel && resultDisplay.isCorrect && correctCount === gameState.sequence.length) || 
+           (remainingLives === 0 && !resultDisplay.isCorrect) ? (
             <LastResultModal
               finalLevel={level}
               soundType={questionVoice}
@@ -585,7 +616,7 @@ export const QuestionMode = ({
             />
           ) : (
             <ResultModal
-              isCorrect={isCorrect}
+              isCorrect={resultDisplay.isCorrect}
               level={level}
               score={score}
               onContinue={handleContinue}
