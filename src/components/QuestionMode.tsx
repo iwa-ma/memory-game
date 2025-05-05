@@ -16,6 +16,7 @@ import { useGameState } from '@/hooks/useGameState';
 import { useGameResult } from '@/hooks/useGameResult';
 import { useGameProgress } from '@/hooks/useGameProgress';
 import { useGameScore } from '@/hooks/useGameScore';
+import { useGameCountdown } from '@/hooks/useGameCountdown';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -97,7 +98,6 @@ export const QuestionMode = ({
   const {
     state: gameState,
     setPhase,
-    setCountdown,
     setCurrentIndex,
     handleGenerateSequence
   } = useGameState({
@@ -137,6 +137,18 @@ export const QuestionMode = ({
     calculateQuestionScore,
     calculateLevelClearScore
   } = useGameScore();
+
+  // useGameCountdownフックを使用
+  const {
+    countdown,
+    resetCountdown
+  } = useGameCountdown(
+    isSoundEnabled,
+    isSoundLoaded,
+    isAudioReady,
+    () => setPhase('showing'),
+    gameState.phase
+  );
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -393,71 +405,6 @@ export const QuestionMode = ({
     }
   }, [gameState.phase, gameState.sequence]);
 
-  /** カウントダウン処理（再レンダリング時の音声重複再生を防ぐ） */
-  const countdownRef = useRef<{
-    isRunning: boolean;
-  }>({ isRunning: false });
-
-  useEffect(() => {
-    // 音声ファイルの読み込みが完了し、かつ音声再生の準備ができている場合に実行
-    if (gameState.phase === 'ready' && isSoundLoaded && isAudioReady && !countdownRef.current.isRunning) {
-      // 問題生成（初回マウント時のみ）
-      if (gameState.sequence.length === 0) {
-        handleGenerateSequence();
-      }
-
-      // カウントダウン開始フラグを設定
-      countdownRef.current.isRunning = true;
-
-      // カウントダウン開始
-      const countdownValues: (number | 'Start')[] = [3, 2, 1, 0, 'Start'];
-      let currentIndex = 0;
-
-      // カウントダウン音声を再生する関数
-      const playCountdownSound = async (value: number | 'Start') => {
-        if (isSoundEnabled) {
-          try {
-            const soundName = value === 'Start' ? 'start' : value.toString();
-            // 音声を再生
-            await playSound(soundName);
-          } catch (error) {
-            console.warn('カウントダウン音声の再生に失敗しました:', error);
-          }
-        }
-      };
-
-      // カウントダウンを処理する関数
-      const processCountdown = async () => {
-        if (!countdownRef.current.isRunning) return;  
-
-        // カウントダウンの値が存在する場合
-        if (currentIndex < countdownValues.length) {
-          const currentValue = countdownValues[currentIndex];
-          // カウントダウンの値を設定
-          setCountdown(currentValue);
-          // カウントダウン音声を再生
-          await playCountdownSound(currentValue);
-          // カウントダウンインデックスをインクリメント
-          currentIndex++;
-          // 次のカウントダウンを処理
-          processCountdown();
-        } else {
-          // カウントダウン終了後、showingフェーズに移行
-          setPhase('showing');
-          // カウントダウン開始フラグをリセット
-          countdownRef.current.isRunning = false;
-        }
-      };
-
-      // カウントダウン開始
-      processCountdown();
-
-      return () => {
-        countdownRef.current.isRunning = false;
-      };
-    }
-  }, [gameState.phase, isSoundLoaded, isAudioReady]);
-
   /** 結果表示モーダルで「次のレベルへ」クリック処理 */
   const handleContinue = () => {
     console.log('handleContinue');
@@ -466,7 +413,7 @@ export const QuestionMode = ({
     // ボタンを消灯
     setCurrentIndex(-1);
     // 問題をリセット
-    setCountdown(3);
+    resetCountdown();
     // レベル内のミス状態をリセット
     resetScore();
     // レベルアップ
@@ -512,7 +459,7 @@ export const QuestionMode = ({
 
       {/* カウントダウンモーダル */}
       {gameState.phase === 'ready' && (
-        <CountdownModal level={level} countdown={gameState.countdown} />
+        <CountdownModal level={level} countdown={countdown} />
       )}
 
       {/* 解答モードへの移行を示すモーダル */}
