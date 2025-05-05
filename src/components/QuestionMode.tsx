@@ -17,6 +17,7 @@ import { useGameResult } from '@/hooks/useGameResult';
 import { useGameProgress } from '@/hooks/useGameProgress';
 import { useGameScore } from '@/hooks/useGameScore';
 import { useGameCountdown } from '@/hooks/useGameCountdown';
+import { isAnswerCorrect, validateAnswer as validateAnswerLogic } from '@/hooks/useAnswerValidation';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -230,29 +231,26 @@ export const QuestionMode = ({
 
   /** 解答を検証する関数 */
   const validateAnswer = async (input: number) => {    
-    // 現在の正解数に基づいて期待される数字を取得
-    const expectedNumber = gameState.sequence[correctCount];
+    // 検証ロジックを使用して結果を取得
+    const validationResult = validateAnswerLogic(input, gameState, correctCount);
     
-    // 入力値が期待される数字と一致するか
-    const isCurrentInputCorrect = input === expectedNumber;
-
     // 入力の正誤結果を追加
-    addAnswerResult(isCurrentInputCorrect);
+    addAnswerResult(validationResult.isCorrect);
 
     // 解答時間を計算（ミリ秒を秒に変換）
     const answerTime = (Date.now() - answerStartTime) / 1000;
 
     // コンボ数を更新
-    updateCombo(isCurrentInputCorrect);
+    updateCombo(validationResult.isCorrect);
 
     // 問題のスコアを計算
-    const questionScore = calculateQuestionScore(isCurrentInputCorrect, answerTime);
+    const questionScore = calculateQuestionScore(validationResult.isCorrect, answerTime);
     setQuestionScore(questionScore);
 
     // スコアを即座に更新
     onScoreUpdate(score + questionScore);
 
-    if (!isCurrentInputCorrect) {
+    if (!validationResult.isCorrect) {
         // 不正解の処理
         updateResultDisplay({
           isCorrect: false,
@@ -316,7 +314,7 @@ export const QuestionMode = ({
     incrementCorrectCount();
     
     // 正解数が目標の長さに達したかチェック
-    if (correctCount + 1 === gameState.sequence.length) {
+    if (validationResult.isLevelCleared) {
         // レベルクリア
         // resultフェーズに移行
         setPhase('result');
