@@ -51,6 +51,45 @@ export const useGameScore = () => {
     setAnswerStartTime(0);
   };
 
+  /** タイムボーナスを計算する処理 */
+  const calculateTimeBonus = (answerTime: number): number => {
+    if (answerTime <= 2) {
+      return 30;  // 2秒以内: +30点
+    } else if (answerTime <= 3) {
+      return 15;  // 3秒以内: +15点
+    }
+    return 0;
+  };
+
+  /** コンボボーナスを計算する処理 */
+  const calculateComboBonus = (isCorrect: boolean): number => {
+    if (isCorrect) {
+      const newComboCount = comboCount + 1;
+      if (newComboCount >= 2) {
+        return newComboCount * 10; // コンボ数 × 10点のボーナス
+      }
+    }
+    return 0;
+  };
+
+  /** ノーミスクリアボーナスを計算する処理 */
+  const calculateNoMistakeBonus = (level: number): number => {
+    return !hasMistakeInLevel ? level * 500 : 0;
+  };
+
+  /** 問題のスコアを計算する処理 */
+  const calculateQuestionScore = (isCorrect: boolean, answerTime: number): number => {
+    const baseScore = isCorrect ? 50 : -20;
+    const timeBonus = calculateTimeBonus(answerTime);
+    const comboBonus = calculateComboBonus(isCorrect);
+    return baseScore + timeBonus + comboBonus;
+  };
+
+  /** レベルクリア時のスコアを計算する処理 */
+  const calculateLevelClearScore = (level: number): number => {
+    return level * 100 + calculateNoMistakeBonus(level);
+  };
+
   return {
     hasMistakeInLevel,
     currentQuestionScore,
@@ -60,6 +99,8 @@ export const useGameScore = () => {
     setQuestionScore,
     updateCombo,
     setStartTime,
-    resetScore
+    resetScore,
+    calculateQuestionScore,
+    calculateLevelClearScore
   };
 }; 
