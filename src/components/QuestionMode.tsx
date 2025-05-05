@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect} from 'react';
 import styled from 'styled-components';
 import { GameStatus } from '@/components/question/GameStatus';
 import { CountdownModal } from '@/components/question/CountdownModal';
@@ -7,7 +7,6 @@ import { NumberPad } from '@/components/question/NumberPad';
 import { InputHistory } from '@/components/question/InputHistory';
 import { ResultModal } from '@/components/question/ResultModal';
 import { LastResultModal } from '@/components/question/LastResultModal';
-import { generateSequence } from '@/utils/gameUtils';
 import { isMobileDevice } from '@/utils/deviceUtils';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
@@ -17,7 +16,7 @@ import { useGameResult } from '@/hooks/useGameResult';
 import { useGameProgress } from '@/hooks/useGameProgress';
 import { useGameScore } from '@/hooks/useGameScore';
 import { useGameCountdown } from '@/hooks/useGameCountdown';
-import { isAnswerCorrect, validateAnswer as validateAnswerLogic } from '@/hooks/useAnswerValidation';
+import { validateAnswer as validateAnswerLogic } from '@/hooks/useAnswerValidation';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
