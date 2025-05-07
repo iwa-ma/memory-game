@@ -79,11 +79,7 @@ export const useGameScore = () => {
 
   /** 問題のスコアを計算する処理 */
   const calculateQuestionScore = (isCorrect: boolean, answerTime: number): number => {
-    if (!isCorrect) {
-      return -20; // 不正解の場合は固定で-20点
-    }
-    // 正解の場合のみボーナスを計算
-    const baseScore = 50;
+    const baseScore = isCorrect ? 50 : -20;
     const timeBonus = calculateTimeBonus(answerTime);
     const comboBonus = calculateComboBonus(isCorrect);
     return baseScore + timeBonus + comboBonus;
