@@ -9,6 +9,7 @@ import { useGameLogic } from '@/hooks/useGameLogic';
 import { FINAL_LEVEL } from '@/constants/gameConstants';
 import { LoadingContainer, LoadingText, LoadingSpinner } from '@/styles/LoadingStyles';
 import { SoundNotice } from '@/styles/NoticeStyles';
+import { useEffect } from 'react';
 
 /** ルート */
 export const Route = createFileRoute('/')({
@@ -41,6 +42,17 @@ function App() {
     setShowAllHistory,
     setIsSettingsOpen,
   } = useGameLogic();
+
+  // 出題・解答モード時にbodyへno-scrollクラスを付与(出題が隠れるのを防ぐため)
+  useEffect(() => {
+    if (gameMode !== 'waiting') {
+      window.scrollTo(0, 0); // 一番上にスクロール
+      document.body.classList.add('no-scroll');
+    } else {
+      document.body.classList.remove('no-scroll');
+    }
+    return () => document.body.classList.remove('no-scroll');
+  }, [gameMode]);
 
   /** 音声ファイル読み込み中の表示 */
   if (isLoading) {
