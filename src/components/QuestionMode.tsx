@@ -7,7 +7,6 @@ import { NumberPad } from '@/components/question/NumberPad';
 import { InputHistory } from '@/components/question/InputHistory';
 import { ResultModal } from '@/components/question/ResultModal';
 import { LastResultModal } from '@/components/question/LastResultModal';
-import { generateSequence } from '@/utils/gameUtils';
 import { isMobileDevice } from '@/utils/deviceUtils';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
