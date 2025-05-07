@@ -18,6 +18,7 @@ import { useGameScore } from '@/hooks/useGameScore';
 import { useScoreCalculation } from '@/hooks/useScoreCalculation';
 import { useGameCountdown } from '@/hooks/useGameCountdown';
 import { isAnswerCorrect, validateAnswer as validateAnswerLogic } from '@/hooks/useAnswerValidation';
+import { useAnswerHandling } from '@/hooks/useAnswerHandling';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -164,6 +165,21 @@ export const QuestionMode = ({
     gameState.phase
   );
 
+  // useAnswerHandlingフックを使用
+  const {
+    handleIncorrectAnswer,
+    handleCorrectAnswer
+  } = useAnswerHandling({
+    isSoundEnabled,
+    onResultDisplay: (isCorrect) => updateResultDisplay({ isCorrect, showResult: true }),
+    onMistake: () => setMistake(true),
+    onRemainingLivesUpdate: setRemainingLives,
+    onPhaseChange: setPhase,
+    onCorrectCountIncrement: incrementCorrectCount,
+    onStartTimeUpdate: setStartTime,
+    onLevelClear: (levelClearScore) => onScoreUpdate(score + levelClearScore),
+    onResetResultDisplay: resetResultDisplay
+  });
 
   // 音声ファイルの読み込み状態を監視
   useEffect(() => {
@@ -237,91 +253,6 @@ export const QuestionMode = ({
     } else {
       // モバイル端末以外の場合は準備完了として扱う
       setIsAudioReady(true);
-    }
-  };
-
-  /** 不正解時の処理 */
-  const handleIncorrectAnswer = async () => {
-    // 結果表示を更新
-    updateResultDisplay({
-      isCorrect: false,
-      showResult: true
-    });
-    // レベル内でミスがあったことを記録
-    setMistake(true);
-
-    // 音声再生
-    if (isSoundEnabled) {
-      // 不正解音声の再生時間を取得
-      const soundDuration = getSoundDuration('incorrect');
-      // 再生時間が0.1秒より短い場合は1.0秒として扱う
-      const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
-      // 不正解音声を再生し、再生時間が経過したら次の処理へ
-      await Promise.all([
-        playSound('incorrect'),
-        new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
-      ]);
-    } else {
-      // 音声無効時は1秒待機
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    // ライフを1減らす処理
-    setRemainingLives(prev => {
-      const newLives = Math.max(0, prev - 1);
-      if (newLives === 0) {
-        setPhase('result');
-        updateResultDisplay({
-          isCorrect: false,
-          showResult: true
-        });
-      } else {
-        resetResultDisplay();
-        setStartTime(Date.now());
-      }
-      return newLives;
-    });
-  };
-
-  /** 正解時の処理 */
-  const handleCorrectAnswer = async (isLevelCleared: boolean) => {
-    // 結果表示を更新
-    updateResultDisplay({
-      isCorrect: true,
-      showResult: true
-    });
-
-    // 音声再生
-    if (isSoundEnabled) {
-      // 音声の長さを取得
-      const soundDuration = getSoundDuration('correct');
-      // 音声の長さが異常な値の場合はデフォルト値を使用
-      const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
-      // 音声再生と同時に待機を開始
-      await Promise.all([
-        playSound('correct'),
-        new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
-      ]);
-    } else {
-      // 音声が無効な場合は固定の待機時間(1.0秒)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    // 正解数をインクリメント
-    incrementCorrectCount();
-    
-    if (isLevelCleared) {
-      // レベルクリア
-      setPhase('result');
-      const levelClearScore = calculateLevelClearScore({
-        level,
-        hasMistakeInLevel
-      });
-      onScoreUpdate(score + levelClearScore);
-    } else {
-      // 途中の正解の場合
-      resetResultDisplay();
-      setStartTime(Date.now());
     }
   };
 
