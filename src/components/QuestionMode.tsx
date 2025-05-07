@@ -14,6 +14,7 @@ import type { RootState } from '@/store/store';
 import { useSoundLoader } from '@/hooks/useSoundLoader';
 import { useGameState } from '@/hooks/useGameState';
 import { useGameResult } from '@/hooks/useGameResult';
+import { useGameProgress } from '@/hooks/useGameProgress';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -110,18 +111,26 @@ export const QuestionMode = ({
     resetResultDisplay
   } = useGameResult();
 
+  // useGameProgressフックを使用
+  const {
+    correctCount,
+    answerResults,
+    hasMistakeInLevel,
+    incrementCorrectCount,
+    addAnswerResult,
+    setMistake,
+    resetProgress
+  } = useGameProgress({
+    initialLives: lives
+  });
+
   /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
   /** 音声再生の準備状態 */
   const [isAudioReady, setIsAudioReady] = useState(false);
   /** 残りライフ */
   const [remainingLives, setRemainingLives] = useState(lives);
-  /** 正解した数字の数を管理する状態変数を追加 */
-  const [correctCount, setCorrectCount] = useState(0);
-  /** 各入力の正誤を管理する状態変数を追加 */
-  const [answerResults, setAnswerResults] = useState<boolean[]>([]);
-  /** レベル内でのミスを管理する状態変数を追加 */
-  const [hasMistakeInLevel, setHasMistakeInLevel] = useState(false);
+
   /** 現在の問題のスコアを管理する状態変数を追加 */
   const [currentQuestionScore, setCurrentQuestionScore] = useState(0);
   /** コンボ数を管理する状態変数を追加 */
@@ -215,8 +224,8 @@ export const QuestionMode = ({
     // 入力値が期待される数字と一致するか
     const isCurrentInputCorrect = input === expectedNumber;
 
-    // 入力の正誤結果を、管理配列に追加(現在の配列をコピーして新しい配列を作成)
-    setAnswerResults(prev => [...prev, isCurrentInputCorrect]);
+    // 入力の正誤結果を追加
+    addAnswerResult(isCurrentInputCorrect);
 
     // 解答時間を計算（ミリ秒を秒に変換）
     const answerTime = (Date.now() - answerStartTime) / 1000;
@@ -254,47 +263,47 @@ export const QuestionMode = ({
     onScoreUpdate(score + questionScore);
 
     if (!isCurrentInputCorrect) {
-        // 不正解の処理
-        updateResultDisplay({
-          isCorrect: false,
-          showResult: true
-        });
-        // レベル内でミスがあったことを記録
-        setHasMistakeInLevel(true);
+      // 不正解の処理
+      updateResultDisplay({
+        isCorrect: false,
+        showResult: true
+      });
+      // レベル内でミスがあったことを記録
+      setMistake(true);
 
-        if (isSoundEnabled) {
-          // 音声の長さを取得
-          const soundDuration = getSoundDuration('incorrect');
-          // 音声の長さが異常な値の場合はデフォルト値を使用
-          const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
-          // 音声再生と同時に待機を開始
-          await Promise.all([
-            playSound('incorrect'),
-            new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
-          ]);
+      if (isSoundEnabled) {
+        // 音声の長さを取得
+        const soundDuration = getSoundDuration('incorrect');
+        // 音声の長さが異常な値の場合はデフォルト値を使用
+        const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
+        // 音声再生と同時に待機を開始
+        await Promise.all([
+          playSound('incorrect'),
+          new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
+        ]);
+      } else {
+        // 音声が無効な場合は固定の待機時間(1秒)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // ライフを1減らす処理
+      setRemainingLives(prev => {
+        const newLives = Math.max(0, prev - 1);
+        if (newLives === 0) {
+          setPhase('result');
+          updateResultDisplay({
+            isCorrect: false,
+            showResult: true
+          });
         } else {
-          // 音声が無効な場合は固定の待機時間(1秒)
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // モーダルを非表示
+          resetResultDisplay();
+          // 次の問題の解答開始時間を設定
+          setAnswerStartTime(Date.now());
         }
-
-        // ライフを1減らす処理
-        setRemainingLives(prev => {
-          const newLives = Math.max(0, prev - 1);
-          if (newLives === 0) {
-            setPhase('result');
-            updateResultDisplay({
-              isCorrect: false,
-              showResult: true
-            });
-          } else {
-            // モーダルを非表示
-            resetResultDisplay();
-            // 次の問題の解答開始時間を設定
-            setAnswerStartTime(Date.now());
-          }
-          return newLives;
-        });
-        return;
+        return newLives;
+      });
+      return;
     }
 
     // 正解の場合
@@ -318,23 +327,22 @@ export const QuestionMode = ({
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    // 正解数をインクリメントして新しい正解数を設定
-    const newCorrectCount = correctCount + 1;
-    setCorrectCount(newCorrectCount);
+    // 正解数をインクリメント
+    incrementCorrectCount();
     
     // 正解数が目標の長さに達したかチェック
-    if (newCorrectCount === gameState.sequence.length) {
-        // レベルクリア
-        // resultフェーズに移行
-        setPhase('result');
-        // スコアを更新（ノーミスクリアボーナスを含む）
-        const noMistakeBonus = !hasMistakeInLevel ? level * 500 : 0;
-        onScoreUpdate(score + level * 100 + noMistakeBonus);
+    if (correctCount + 1 === gameState.sequence.length) {
+      // レベルクリア
+      // resultフェーズに移行
+      setPhase('result');
+      // スコアを更新（ノーミスクリアボーナスを含む）
+      const noMistakeBonus = !hasMistakeInLevel ? level * 500 : 0;
+      onScoreUpdate(score + level * 100 + noMistakeBonus);
     } else {
-        // 途中の正解の場合
-        resetResultDisplay();
-        // 次の問題の解答開始時間を設定
-        setAnswerStartTime(Date.now());
+      // 途中の正解の場合
+      resetResultDisplay();
+      // 次の問題の解答開始時間を設定
+      setAnswerStartTime(Date.now());
     }
   };
 
@@ -487,7 +495,7 @@ export const QuestionMode = ({
     // 問題をリセット
     setCountdown(3);
     // レベル内のミス状態をリセット
-    setHasMistakeInLevel(false);
+    setMistake(false);
     // 問題のスコアをリセット
     setCurrentQuestionScore(0);
     // レベルアップ
@@ -498,8 +506,7 @@ export const QuestionMode = ({
 
   /** 結果表示モーダルで「終了する」クリック処理 */
   const handleEndGame = () => {
-    setCorrectCount(0);
-    setAnswerResults([]);
+    resetProgress();
     resetResultDisplay();
     onGameEnd();
   };
@@ -523,9 +530,7 @@ export const QuestionMode = ({
 
   // レベルが変更されたときやゲームがリセットされたときに正解数をリセット
   useEffect(() => {
-    setCorrectCount(0);
-    setAnswerResults([]);
-    setHasMistakeInLevel(false);
+    resetProgress();
     setCurrentQuestionScore(0);
     setComboCount(0);
     setAnswerStartTime(0);
