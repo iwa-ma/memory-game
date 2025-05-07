@@ -68,3 +68,8 @@ body {
   width: 100vw;
   height: 100vh;
 }
+
+body.no-scroll {
+  overflow: hidden !important;
+  height: 100vh;
+}
