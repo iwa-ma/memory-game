@@ -17,7 +17,7 @@ import { useGameProgress } from '@/hooks/useGameProgress';
 import { useGameScore } from '@/hooks/useGameScore';
 import { useScoreCalculation } from '@/hooks/useScoreCalculation';
 import { useGameCountdown } from '@/hooks/useGameCountdown';
-import { isAnswerCorrect, validateAnswer as validateAnswerLogic } from '@/hooks/useAnswerValidation';
+import { validateAnswer as validateAnswerLogic } from '@/hooks/useAnswerValidation';
 import { useAnswerHandling } from '@/hooks/useAnswerHandling';
 
 /** メッセージ枠のスタイル */
