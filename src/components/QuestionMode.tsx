@@ -14,7 +14,6 @@ import type { RootState } from '@/store/store';
 import { useSoundLoader } from '@/hooks/useSoundLoader';
 import { useGameState } from '@/hooks/useGameState';
 import { useGameResult } from '@/hooks/useGameResult';
-import { useGameProgress } from '@/hooks/useGameProgress';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -87,25 +86,17 @@ export const QuestionMode = ({
   /** 難易度 */
   const difficulty = useSelector((state: RootState) => state.settings.difficultyLevel);
 
-  /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
-  const [isSoundLoaded, setIsSoundLoaded] = useState(false);
-  /** 音声再生の準備状態 */
-  const [isAudioReady, setIsAudioReady] = useState(false);
-  /** レベル内でのミスを管理する状態変数を追加 */
-  const [hasMistakeInLevel, setHasMistakeInLevel] = useState(false);
-  /** 現在の問題のスコアを管理する状態変数を追加 */
-  const [currentQuestionScore, setCurrentQuestionScore] = useState(0);
-  /** コンボ数を管理する状態変数を追加 */
-  const [comboCount, setComboCount] = useState(0);
-  /** 解答開始時間を管理する状態変数を追加 */
-  const [answerStartTime, setAnswerStartTime] = useState<number>(0);
-
   // useGameStateフックを使用
   const {
+    /** ゲームの状態 */
     state: gameState,
+    /** フェーズを更新する関数 */
     setPhase,
+    /** カウントダウンを更新する関数 */
     setCountdown,
+    /** 現在のインデックスを更新する関数 */
     setCurrentIndex,
+    /** シーケンスを生成する関数 */
     handleGenerateSequence
   } = useGameState({
     numbers,
@@ -119,16 +110,24 @@ export const QuestionMode = ({
     resetResultDisplay
   } = useGameResult();
 
-  // useGameProgressフックを使用
-  const {
-    remainingLives,
-    correctCount,
-    answerResults,
-    decreaseLife,
-    incrementCorrectCount,
-    addAnswerResult,
-    resetProgress
-  } = useGameProgress(lives);
+  /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
+  const [isSoundLoaded, setIsSoundLoaded] = useState(false);
+  /** 音声再生の準備状態 */
+  const [isAudioReady, setIsAudioReady] = useState(false);
+  /** 残りライフ */
+  const [remainingLives, setRemainingLives] = useState(lives);
+  /** 正解した数字の数を管理する状態変数を追加 */
+  const [correctCount, setCorrectCount] = useState(0);
+  /** 各入力の正誤を管理する状態変数を追加 */
+  const [answerResults, setAnswerResults] = useState<boolean[]>([]);
+  /** レベル内でのミスを管理する状態変数を追加 */
+  const [hasMistakeInLevel, setHasMistakeInLevel] = useState(false);
+  /** 現在の問題のスコアを管理する状態変数を追加 */
+  const [currentQuestionScore, setCurrentQuestionScore] = useState(0);
+  /** コンボ数を管理する状態変数を追加 */
+  const [comboCount, setComboCount] = useState(0);
+  /** 解答開始時間を管理する状態変数を追加 */
+  const [answerStartTime, setAnswerStartTime] = useState<number>(0);
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
@@ -216,8 +215,8 @@ export const QuestionMode = ({
     // 入力値が期待される数字と一致するか
     const isCurrentInputCorrect = input === expectedNumber;
 
-    // 入力の正誤結果を追加
-    addAnswerResult(isCurrentInputCorrect);
+    // 入力の正誤結果を、管理配列に追加(現在の配列をコピーして新しい配列を作成)
+    setAnswerResults(prev => [...prev, isCurrentInputCorrect]);
 
     // 解答時間を計算（ミリ秒を秒に変換）
     const answerTime = (Date.now() - answerStartTime) / 1000;
@@ -279,17 +278,22 @@ export const QuestionMode = ({
         }
 
         // ライフを1減らす処理
-        decreaseLife();
-        // ライフが0になった場合の処理
-        if (remainingLives === 1) {
-          setPhase('result');
-          onGameEnd();
-        } else {
-          // モーダルを非表示
-          resetResultDisplay();
-          // 次の問題の解答開始時間を設定
-          setAnswerStartTime(Date.now());
-        }
+        setRemainingLives(prev => {
+          const newLives = Math.max(0, prev - 1);
+          if (newLives === 0) {
+            setPhase('result');
+            updateResultDisplay({
+              isCorrect: false,
+              showResult: true
+            });
+          } else {
+            // モーダルを非表示
+            resetResultDisplay();
+            // 次の問題の解答開始時間を設定
+            setAnswerStartTime(Date.now());
+          }
+          return newLives;
+        });
         return;
     }
 
@@ -314,11 +318,12 @@ export const QuestionMode = ({
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    // 正解数をインクリメント
-    incrementCorrectCount();
+    // 正解数をインクリメントして新しい正解数を設定
+    const newCorrectCount = correctCount + 1;
+    setCorrectCount(newCorrectCount);
     
     // 正解数が目標の長さに達したかチェック
-    if (correctCount + 1 === gameState.sequence.length) {
+    if (newCorrectCount === gameState.sequence.length) {
         // レベルクリア
         // resultフェーズに移行
         setPhase('result');
@@ -493,7 +498,8 @@ export const QuestionMode = ({
 
   /** 結果表示モーダルで「終了する」クリック処理 */
   const handleEndGame = () => {
-    resetProgress();
+    setCorrectCount(0);
+    setAnswerResults([]);
     resetResultDisplay();
     onGameEnd();
   };
@@ -515,9 +521,10 @@ export const QuestionMode = ({
     }
   }, [gameState.phase]);
 
-  // レベルが変更されたときのリセット処理
+  // レベルが変更されたときやゲームがリセットされたときに正解数をリセット
   useEffect(() => {
-    resetProgress();
+    setCorrectCount(0);
+    setAnswerResults([]);
     setHasMistakeInLevel(false);
     setCurrentQuestionScore(0);
     setComboCount(0);
