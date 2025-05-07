@@ -240,86 +240,58 @@ export const QuestionMode = ({
     }
   };
 
-  /** 解答を検証する関数 */
-  const validateAnswer = async (input: number) => {    
-    // 検証ロジックを使用して結果を取得
-    const validationResult = validateAnswerLogic(input, gameState, correctCount);
+  /** 不正解時の処理 */
+  const handleIncorrectAnswer = async () => {
+    // 結果表示を更新
+    updateResultDisplay({
+      isCorrect: false,
+      showResult: true
+    });
+    // レベル内でミスがあったことを記録
+    setMistake(true);
 
-    // 入力の正誤結果を追加
-    addAnswerResult(validationResult.isCorrect);
-
-    // 解答時間を計算（ミリ秒を秒に変換）
-    const answerTime = (Date.now() - answerStartTime) / 1000;
-
-    // コンボボーナスの計算
-    if (!validationResult.isCorrect) {      // 正解の場合、コンボ数を増やす
-      updateCombo(validationResult.isCorrect);
+    // 音声再生
+    if (isSoundEnabled) {
+      // 不正解音声の再生時間を取得
+      const soundDuration = getSoundDuration('incorrect');
+      // 再生時間が0.1秒より短い場合は1.0秒として扱う
+      const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
+      // 不正解音声を再生し、再生時間が経過したら次の処理へ
+      await Promise.all([
+        playSound('incorrect'),
+        new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
+      ]);
     } else {
-      // 不正解の場合、コンボをリセット
-      updateCombo(false);
+      // 音声無効時は1秒待機
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    // 問題のスコアを計算
-    const questionScore = calculateQuestionScore(
-      validationResult.isCorrect,
-      answerTime,
-      comboCount
-    )
-    setQuestionScore(questionScore);
-
-    // スコアを即座に更新
-    onScoreUpdate(score + questionScore);
-
-    if (!validationResult.isCorrect) {
-      // 不正解の処理
-      updateResultDisplay({
-        isCorrect: false,
-        showResult: true
-      });
-      // レベル内でミスがあったことを記録
-      setMistake(true);
-
-      if (isSoundEnabled) {
-        // 音声の長さを取得
-        const soundDuration = getSoundDuration('incorrect');
-        // 音声の長さが異常な値の場合はデフォルト値を使用
-        const validDuration = soundDuration > 0.1 ? soundDuration : 1.0;
-        // 音声再生と同時に待機を開始
-        await Promise.all([
-          playSound('incorrect'),
-          new Promise(resolve => setTimeout(resolve, (validDuration * 1000)))
-        ]);
+    // ライフを1減らす処理
+    setRemainingLives(prev => {
+      const newLives = Math.max(0, prev - 1);
+      if (newLives === 0) {
+        setPhase('result');
+        updateResultDisplay({
+          isCorrect: false,
+          showResult: true
+        });
       } else {
-        // 音声が無効な場合は固定の待機時間(1秒)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        resetResultDisplay();
+        setStartTime(Date.now());
       }
+      return newLives;
+    });
+  };
 
-      // ライフを1減らす処理
-      setRemainingLives(prev => {
-        const newLives = Math.max(0, prev - 1);
-        if (newLives === 0) {
-          setPhase('result');
-          updateResultDisplay({
-            isCorrect: false,
-            showResult: true
-          });
-        } else {
-          // モーダルを非表示
-          resetResultDisplay();
-          // 次の問題の解答開始時間を設定
-          setStartTime(Date.now());
-        }
-        return newLives;
-      });
-      return;
-    }
-
-    // 正解の場合
+  /** 正解時の処理 */
+  const handleCorrectAnswer = async (isLevelCleared: boolean) => {
+    // 結果表示を更新
     updateResultDisplay({
       isCorrect: true,
       showResult: true
     });
 
+    // 音声再生
     if (isSoundEnabled) {
       // 音声の長さを取得
       const soundDuration = getSoundDuration('correct');
@@ -338,12 +310,9 @@ export const QuestionMode = ({
     // 正解数をインクリメント
     incrementCorrectCount();
     
-    // 正解数が目標の長さに達したかチェック
-    if (validationResult.isLevelCleared) {
+    if (isLevelCleared) {
       // レベルクリア
-      // resultフェーズに移行
       setPhase('result');
-      // スコアを更新（ノーミスクリアボーナスを含む）
       const levelClearScore = calculateLevelClearScore({
         level,
         hasMistakeInLevel
@@ -352,9 +321,44 @@ export const QuestionMode = ({
     } else {
       // 途中の正解の場合
       resetResultDisplay();
-      // 次の問題の解答開始時間を設定
       setStartTime(Date.now());
     }
+  };
+
+  /** 解答を検証する関数 */
+  const validateAnswer = async (input: number) => {    
+    // 検証ロジックを使用して結果を取得
+    const validationResult = validateAnswerLogic(input, gameState, correctCount);
+
+    // 入力の正誤結果を追加
+    addAnswerResult(validationResult.isCorrect);
+
+    // 解答時間を計算（ミリ秒を秒に変換）
+    const answerTime = (Date.now() - answerStartTime) / 1000;
+
+    // コンボボーナスの計算
+    updateCombo(validationResult.isCorrect);
+
+    // 問題のスコアを計算
+    const questionScore = calculateQuestionScore(
+      validationResult.isCorrect,
+      answerTime,
+      comboCount
+    );
+    // 問題のスコアを設定
+    setQuestionScore(questionScore);
+
+    // スコアを即座に更新
+    onScoreUpdate(score + questionScore);
+
+    // 不正解の場合は不正解処理を実行
+    if (!validationResult.isCorrect) {
+      await handleIncorrectAnswer();
+      return;
+    }
+
+    // 正解の場合は正解処理を実行
+    await handleCorrectAnswer(validationResult.isLevelCleared);
   };
 
   /** 数字を順番に光らせる処理 */
