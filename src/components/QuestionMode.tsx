@@ -245,8 +245,24 @@ export const QuestionMode = ({
     const questionScore = (isCurrentInputCorrect ? 50 : -20) + comboBonus + timeBonus;
     setCurrentQuestionScore(questionScore);
 
+    // 新しい合計スコアを計算
+    const newTotalScore = score + questionScore;
     // スコアを即座に更新
-    onScoreUpdate(score + questionScore);
+    onScoreUpdate(newTotalScore);
+
+    // スコア推移のログ出力を追加
+    console.log('問題スコア推移:', {
+      questionNumber: correctCount + 1,
+      totalQuestions: sequence.length,
+      isCorrect: isCurrentInputCorrect,
+      baseScore: isCurrentInputCorrect ? 50 : -20,
+      comboBonus,
+      timeBonus,
+      answerTime: answerTime.toFixed(2),
+      questionScore,
+      totalScore: newTotalScore,
+      comboCount: comboCount + (isCurrentInputCorrect ? 1 : 0)
+    });
 
     if (!isCurrentInputCorrect) {
         // 不正解の処理
@@ -317,7 +333,22 @@ export const QuestionMode = ({
         setPhase('result');
         // スコアを更新（ノーミスクリアボーナスを含む）
         const noMistakeBonus = !hasMistakeInLevel ? level * 500 : 0;
-        onScoreUpdate(score + level * 100 + noMistakeBonus);
+        const levelBonus = level * 100;
+        // 現在の合計スコアを取得（最後の問題のスコアを含む）
+        const currentTotalScore = newTotalScore;  // 最後に更新された合計スコアを使用
+        const finalLevelScore = currentTotalScore + levelBonus + noMistakeBonus;
+        onScoreUpdate(finalLevelScore);
+
+        // レベルクリア時のスコア推移ログを追加
+        console.log('レベルクリアスコア推移:', {
+          level,
+          baseScore: currentTotalScore,  // 現在の合計スコアを使用
+          levelBonus,
+          noMistakeBonus,
+          finalLevelScore,
+          hasMistakeInLevel,
+          answerTime: ((Date.now() - answerStartTime) / 1000).toFixed(2)
+        });
     } else {
         // 途中の正解の場合
         setShowResult(false);
