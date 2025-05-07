@@ -134,7 +134,8 @@ export const QuestionMode = ({
     setQuestionScore,
     updateCombo,
     setStartTime,
-    resetScore
+    resetScore,
+    onScoreUpdateComplete
   } = useGameScore();
 
   // useScoreCalculationフックを使用
@@ -177,8 +178,23 @@ export const QuestionMode = ({
     onPhaseChange: setPhase,
     onCorrectCountIncrement: incrementCorrectCount,
     onStartTimeUpdate: setStartTime,
-    onLevelClear: (levelClearScore) => onScoreUpdate(score + levelClearScore),
-    onResetResultDisplay: resetResultDisplay
+    onLevelClear: (levelClearScore) => {
+      // 現在のスコアを取得（最新の状態を反映）
+      const currentTotalScore = score + currentQuestionScore;
+      console.log('Level clear score update in QuestionMode:', {
+        currentScore: currentTotalScore,
+        levelClearScore,
+        newTotalScore: currentTotalScore + levelClearScore,
+        breakdown: {
+          baseScore: level * 100,
+          noMistakeBonus: !hasMistakeInLevel ? level * 500 : 0
+        }
+      });
+      onScoreUpdate(currentTotalScore + levelClearScore);
+    },
+    onResetResultDisplay: resetResultDisplay,
+    level,
+    hasMistakeInLevel
   });
 
   // 音声ファイルの読み込み状態を監視
@@ -269,16 +285,32 @@ export const QuestionMode = ({
 
     // コンボボーナスの計算
     updateCombo(validationResult.isCorrect);
+    // コンボ数の更新を待つ
+    const updatedComboCount = validationResult.isCorrect ? comboCount + 1 : 0;
 
     // 問題のスコアを計算
     const questionScore = calculateQuestionScore(
       validationResult.isCorrect,
       answerTime,
-      comboCount
+      updatedComboCount
     );
+
+    console.log('Question score update in QuestionMode:', {
+      isCorrect: validationResult.isCorrect,
+      answerTime,
+      comboCount: updatedComboCount,
+      questionScore,
+      currentScore: score,
+      newTotalScore: score + questionScore,
+      breakdown: {
+        baseScore: 50,
+        comboBonus: updatedComboCount >= 2 ? updatedComboCount * 10 : 0,
+        timeBonus: answerTime <= 2 ? 30 : answerTime <= 3 ? 15 : 0
+      }
+    });
+
     // 問題のスコアを設定
     setQuestionScore(questionScore);
-
     // スコアを即座に更新
     onScoreUpdate(score + questionScore);
 

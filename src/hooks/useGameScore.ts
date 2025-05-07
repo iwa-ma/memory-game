@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
-type UseGameScoreReturn = {
+/** useGameScoreフックの戻り値の型 */
+export type UseGameScoreReturn = {
   /** 現在の問題のスコア */
   currentQuestionScore: number;
   /** コンボ数 */
@@ -19,6 +20,8 @@ type UseGameScoreReturn = {
   setMistake: (hasMistake: boolean) => void;
   /** スコア状態をリセット */
   resetScore: () => void;
+  /** スコア更新完了時のコールバック */
+  onScoreUpdateComplete: (callback: () => void) => void;
 };
 
 /**
@@ -33,25 +36,32 @@ export const useGameScore = (): UseGameScoreReturn => {
   const [answerStartTime, setAnswerStartTime] = useState<number>(0);
   /** レベル内でのミス */
   const [hasMistakeInLevel, setHasMistakeInLevel] = useState(false);
+  /** スコア更新完了時のコールバック */
+  const [scoreUpdateCallback, setScoreUpdateCallback] = useState<(() => void) | null>(null);
 
   /** 問題のスコアを設定 */
-  const setQuestionScore = (score: number) => {
+  const setQuestionScore = useCallback((score: number) => {
     setCurrentQuestionScore(score);
-  };
+    // スコア更新完了時のコールバックを実行
+    if (scoreUpdateCallback) {
+      scoreUpdateCallback();
+      setScoreUpdateCallback(null);
+    }
+  }, [scoreUpdateCallback]);
 
   /** コンボ数を更新 */
-  const updateCombo = (isCorrect: boolean) => {
+  const updateCombo = useCallback((isCorrect: boolean) => {
     if (isCorrect) {
       setComboCount(prev => prev + 1);
     } else {
       setComboCount(0);
     }
-  };
+  }, []);
 
   /** 解答開始時間を設定 */
-  const setStartTime = (time: number) => {
+  const setStartTime = useCallback((time: number) => {
     setAnswerStartTime(time);
-  };
+  }, []);
 
   /** レベル内でのミスを設定 */
   const setMistake = (hasMistake: boolean) => {
@@ -59,12 +69,18 @@ export const useGameScore = (): UseGameScoreReturn => {
   };
 
   /** スコア状態をリセット */
-  const resetScore = () => {
+  const resetScore = useCallback(() => {
     setCurrentQuestionScore(0);
     setComboCount(0);
     setAnswerStartTime(0);
     setHasMistakeInLevel(false);
-  };
+    setScoreUpdateCallback(null);
+  }, []);
+
+  /** スコア更新完了時のコールバックを設定する関数 */
+  const onScoreUpdateComplete = useCallback((callback: () => void) => {
+    setScoreUpdateCallback(() => callback);
+  }, []);
 
   return {
     currentQuestionScore,
@@ -75,6 +91,7 @@ export const useGameScore = (): UseGameScoreReturn => {
     updateCombo,
     setStartTime,
     setMistake,
-    resetScore
+    resetScore,
+    onScoreUpdateComplete
   };
 }; 

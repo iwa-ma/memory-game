@@ -12,6 +12,8 @@ type UseAnswerHandlingProps = {
   onStartTimeUpdate: (time: number) => void; // 開始時間更新
   onLevelClear: (levelClearScore: number) => void; // レベルクリア
   onResetResultDisplay: () => void; // 結果表示リセット
+  level: number; // 現在のレベル
+  hasMistakeInLevel: boolean; // レベル内でミスをしたかどうか
 };
 
 /** 解答後処理のフック */
@@ -24,7 +26,9 @@ export const useAnswerHandling = ({
   onCorrectCountIncrement,
   onStartTimeUpdate,
   onLevelClear,
-  onResetResultDisplay
+  onResetResultDisplay,
+  level,
+  hasMistakeInLevel
 }: UseAnswerHandlingProps) => {
   const { playSound, getSoundDuration } = useSoundLoader();
 
@@ -92,7 +96,19 @@ export const useAnswerHandling = ({
     if (isLevelCleared) {
       // レベルクリア
       onPhaseChange('result');
-      onLevelClear(0); // スコアは呼び出し元で計算
+      // レベルクリアスコアを計算（基本スコア + ノーミスクリアボーナス）
+      const levelClearScore = level * 100 + (!hasMistakeInLevel ? level * 500 : 0);
+      console.log('Level clear phase:', {
+        phase: 'result',
+        scoreUpdate: {
+          levelClearScore,
+          breakdown: {
+            baseScore: level * 100,
+            noMistakeBonus: !hasMistakeInLevel ? level * 500 : 0
+          }
+        }
+      });
+      onLevelClear(levelClearScore);
     } else {
       // 途中の正解の場合
       onResetResultDisplay();

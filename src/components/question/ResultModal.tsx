@@ -106,6 +106,25 @@ export const ResultModal = ({
   // タイムボーナスを計算
   const timeBonus = isCorrect ? (answerTime <= 2 ? 30 : answerTime <= 3 ? 15 : 0) : 0;
 
+  // スコア計算のログ出力
+  console.log('ResultModal score calculation:', {
+    isIntermediate,
+    isCorrect,
+    level,
+    scores: {
+      questionScore,
+      levelClearScore,
+      noMistakeBonus,
+      comboBonus,
+      timeBonus
+    },
+    breakdown: {
+      baseScore: questionScore - comboBonus - timeBonus,
+      comboBonus,
+      timeBonus
+    }
+  });
+
   return (
     <ModalOverlay>
       <ModalContent>
