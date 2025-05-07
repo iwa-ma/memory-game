@@ -133,9 +133,7 @@ export const QuestionMode = ({
     setQuestionScore,
     updateCombo,
     setStartTime,
-    resetScore,
-    calculateQuestionScore,
-    calculateLevelClearScore
+    resetScore
   } = useGameScore();
 
   /** 音声ローダー(実際の読み込み状態を表す) */
@@ -230,11 +228,32 @@ export const QuestionMode = ({
     // 解答時間を計算（ミリ秒を秒に変換）
     const answerTime = (Date.now() - answerStartTime) / 1000;
 
-    // コンボ数を更新
-    updateCombo(isCurrentInputCorrect);
+    // タイムボーナスの計算
+    let timeBonus = 0;
+    if (isCurrentInputCorrect) {
+      if (answerTime <= 2) {
+        timeBonus = 30;  // 2秒以内: +30点
+      } else if (answerTime <= 3) {
+        timeBonus = 15;  // 3秒以内: +15点
+      }
+    }
 
-    // 問題のスコアを計算
-    const questionScore = calculateQuestionScore(isCurrentInputCorrect, answerTime);
+    // コンボボーナスの計算
+    let comboBonus = 0;
+    if (isCurrentInputCorrect) {
+      // 正解の場合、コンボ数を増やす
+      updateCombo(true);
+      // コンボ数に応じてボーナスを計算（2コンボ以上でボーナス発生）
+      if (comboCount + 1 >= 2) {
+        comboBonus = (comboCount + 1) * 10; // コンボ数 × 10点のボーナス
+      }
+    } else {
+      // 不正解の場合、コンボをリセット
+      updateCombo(false);
+    }
+
+    // 問題のスコアを設定（正解:50点、不正解:-20点）とボーナスを加算
+    const questionScore = (isCurrentInputCorrect ? 50 : -20) + comboBonus + timeBonus;
     setQuestionScore(questionScore);
 
     // スコアを即座に更新
@@ -309,8 +328,8 @@ export const QuestionMode = ({
         // resultフェーズに移行
         setPhase('result');
         // スコアを更新（ノーミスクリアボーナスを含む）
-        const levelClearScore = calculateLevelClearScore(level);
-        onScoreUpdate(score + levelClearScore);
+        const noMistakeBonus = !hasMistakeInLevel ? level * 500 : 0;
+        onScoreUpdate(score + level * 100 + noMistakeBonus);
     } else {
         // 途中の正解の場合
         resetResultDisplay();
