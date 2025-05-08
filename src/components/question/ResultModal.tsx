@@ -161,7 +161,7 @@ export const ResultModal = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                スタート画面に戻る
+                終了する
               </Button>
             </ButtonContainer>
           ) : null
