@@ -110,6 +110,16 @@ export const QuestionMode = ({
   /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
 
+  /** 状態のクリーンアップを行う関数 */
+  const cleanupGameState = () => {
+    // 正解数をリセット
+    setCorrectCount(0);
+    // 解答結果をリセット
+    setAnswerResults([]);
+    // 結果表示モーダルを非表示
+    setShowResult(false);
+  };
+
   /** 結果モーダルを表示するかどうかを判定する関数(条件拡張を想定して関数化) */
   const shouldShowResultModal = () => {
     return showResult;
@@ -430,9 +440,18 @@ export const QuestionMode = ({
 
   /** 結果表示モーダルで「終了する」クリック処理 */
   const handleEndGame = () => {
-    setCorrectCount(0);
-    setAnswerResults([]);
-    setShowResult(false);
+    // LastResultModal表示のための条件設定
+    setRemainingLives(0);  // ゲームオーバー状態
+    setIsCorrect(false);   // 不正解状態
+    // 最終結果を表示
+    setShowResult(true);
+  };
+
+  /** 最終結果モーダルで「スタート画面に戻る」クリック処理 */
+  const handleReturnToStart = () => {
+    // 状態のクリーンアップ
+    cleanupGameState();
+    // ゲーム終了
     onGameEnd();
   };
 
@@ -511,7 +530,7 @@ export const QuestionMode = ({
               startLevel={startLevel}
               difficulty={difficulty}
               finalScore={score}
-              onReturnToStart={handleEndGame}
+              onReturnToStart={handleReturnToStart}
               isGameOver={remainingLives === 0}
             />
           ) : (
