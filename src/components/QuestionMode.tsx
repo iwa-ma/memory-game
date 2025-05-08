@@ -12,6 +12,7 @@ import { isMobileDevice } from '@/utils/deviceUtils';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
 import { useSoundLoader } from '@/hooks/useSoundLoader';
+import { useGameCountdown } from '@/hooks/useGameCountdown';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -89,8 +90,6 @@ export const QuestionMode = ({
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   /** 出題フェーズの状態管理 */
   const [phase, setPhase] = useState<'preparing' | 'ready' | 'showing' | 'answering' | 'result'>('ready');
-  /** カウントダウン用の状態を修正 */
-  const [countdown, setCountdown] = useState<number | 'Start'>(3);
   /** 結果モーダルの表示状態 */
   const [showResult, setShowResult] = useState(false);
   /** 正解かどうかの状態 */
@@ -118,6 +117,28 @@ export const QuestionMode = ({
 
   /** 音声ローダー(実際の読み込み状態を表す) */
   const { playSound, getSoundDuration, isLoading } = useSoundLoader();
+  
+  /** カウントダウン終了時の処理 */
+  const handleCountdownComplete = () => {
+    // 問題が生成されていない場合は生成
+    if (sequence.length === 0) {
+      handleGenerateSequence();
+    }
+    // showingフェーズに移行
+    setPhase('showing');
+  };
+
+  // useGameCountdownフックを使用
+  const {
+    countdown,
+    resetCountdown
+  } = useGameCountdown(
+    isSoundEnabled,
+    isSoundLoaded,
+    isAudioReady,
+    handleCountdownComplete,
+    phase
+  );
 
   // 音声ファイルの読み込み状態を監視
   useEffect(() => {
@@ -136,10 +157,33 @@ export const QuestionMode = ({
 
   // levelが変更されたときに問題を生成
   useEffect(() => {
-    if (phase === 'preparing') {
+    if (phase === 'ready') {
       handleGenerateSequence();
     }
   }, [level]);
+
+  // フェーズ変更時の処理
+  useEffect(() => {
+    console.log('Phase changed:', phase);
+    switch (phase) {
+      case 'ready':
+        // readyフェーズでは何もしない（カウントダウンはuseGameCountdownで処理）
+        break;
+      case 'showing':
+        // showingフェーズでは問題が生成されていることを確認
+        if (sequence.length === 0) {
+          handleGenerateSequence();
+        }
+        break;
+      case 'answering':
+        // 解答開始時間を設定
+        setAnswerStartTime(Date.now());
+        break;
+      case 'result':
+        // 結果表示時の処理は既存のコードで処理
+        break;
+    }
+  }, [phase]);
 
   /** 問題生成処理 */
   const handleGenerateSequence = () => {
@@ -433,89 +477,6 @@ export const QuestionMode = ({
     }
   }, [phase, sequence]);
 
-  /** カウントダウン処理 */
-  useEffect(() => {
-    // 音声ファイルの読み込みが完了し、かつ音声再生の準備ができている場合に実行
-    if (phase === 'ready' && isSoundLoaded && isAudioReady) {
-      // 問題生成（初回マウント時のみ）
-      if (sequence.length === 0) {
-        handleGenerateSequence();
-      }
-
-      // 出題前のカウントダウン処理
-      const startCountdown = async () => {
-        try {
-          setCountdown(3);
-          const duration3 = getSoundDuration('3');
-          if (isSoundEnabled) {
-            // 音声の再生と同時に待機を開始
-            await Promise.all([
-              playSound('3'),
-              new Promise(resolve => setTimeout(resolve, duration3 * 1000 + (isMobileDevice() ? 300 : 0)))
-            ]);
-          } else {
-            // 音声が無効な場合は音声の長さと同じ時間待機
-            await new Promise(resolve => setTimeout(resolve, duration3 * 1000));
-          }
-
-          setCountdown(2);
-          const duration2 = getSoundDuration('2');
-          if (isSoundEnabled) {
-            await Promise.all([
-              playSound('2'),
-              new Promise(resolve => setTimeout(resolve, duration2 * 1000 + (isMobileDevice() ? 300 : 0)))
-            ]);
-          } else {
-            await new Promise(resolve => setTimeout(resolve, duration2 * 1000));
-          }
-
-          setCountdown(1);
-          const duration1 = getSoundDuration('1');
-          if (isSoundEnabled) {
-            await Promise.all([
-              playSound('1'),
-              new Promise(resolve => setTimeout(resolve, duration1 * 1000 + (isMobileDevice() ? 300 : 0)))
-            ]);
-          } else {
-            await new Promise(resolve => setTimeout(resolve, duration1 * 1000));
-          }
-
-          setCountdown(0);
-          const duration0 = getSoundDuration('0');
-          if (isSoundEnabled) {
-            await Promise.all([
-              playSound('0'),
-              new Promise(resolve => setTimeout(resolve, duration0 * 1000 + (isMobileDevice() ? 300 : 0)))
-            ]);
-          } else {
-            await new Promise(resolve => setTimeout(resolve, duration0 * 1000));
-          }
-
-          setCountdown('Start');
-          const durationStart = getSoundDuration('start');
-          if (isSoundEnabled) {
-            await Promise.all([
-              playSound('start'),
-              new Promise(resolve => setTimeout(resolve, durationStart * 1000 + (isMobileDevice() ? 300 : 0)))
-            ]);
-          } else {
-            await new Promise(resolve => setTimeout(resolve, durationStart * 1000));
-          }
-
-          setPhase('showing');
-          setCountdown(3);
-        } catch (error) {
-          console.error('カウントダウン中にエラーが発生しました:', error);
-          // エラーが発生しても次のフェーズに進む
-          setPhase('showing');
-        }
-      };
-
-      // 音声ファイルの読み込みが完了したらすぐにカウントダウンを開始
-      startCountdown();
-    }
-  }, [phase, isSoundLoaded, isAudioReady]);
-
   /** 結果表示モーダルで「次のレベルへ」クリック処理 */
   const handleContinue = () => {
     console.log('handleContinue');
@@ -525,8 +486,8 @@ export const QuestionMode = ({
     setCurrentIndex(-1);
     // 問題をリセット
     setSequence([]);
-    // カウントダウンを3秒にリセット
-    setCountdown(3);
+    // カウントダウンリセット
+    resetCountdown();
     // レベル内のミス状態をリセット
     setHasMistakeInLevel(false);
     // 問題のスコアをリセット
@@ -554,13 +515,6 @@ export const QuestionMode = ({
       await validateAnswer(number);
     }
   };
-
-  // 解答フェーズに移行したときに最初の問題の解答開始時間を設定
-  useEffect(() => {
-    if (phase === 'answering') {
-      setAnswerStartTime(Date.now());
-    }
-  }, [phase]);
 
   // レベルが変更されたときやゲームがリセットされたときに正解数をリセット
   useEffect(() => {
