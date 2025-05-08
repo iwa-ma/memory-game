@@ -50,8 +50,15 @@ export const useGameCountdown = (
         const currentValue = countdownValues[currentIndex];
         // カウントダウンの値を設定
         setCountdown(currentValue);
-        // カウントダウン音声を再生
-        await playCountdownSound(currentValue);
+        
+        if (isSoundEnabled) {
+          // 音声が有効な場合は音声再生を待機
+          await playCountdownSound(currentValue);
+        } else {
+          // 音声が無効な場合は1秒待機
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
         // カウントダウンインデックスをインクリメント
         currentIndex++;
         // 次のカウントダウンを処理
@@ -81,10 +88,15 @@ export const useGameCountdown = (
 
   /** 音声の準備ができたらカウントダウンを開始 */
   useEffect(() => {
-    if (phase === 'ready' && isSoundLoaded && isAudioReady && !countdownRef.current.isRunning) {
+    // カウントダウンが開始されていない場合
+    const isReadyToStart = phase === 'ready' && !countdownRef.current.isRunning;
+    // 音声が無効な場合は、音声の準備状態に関係なくカウントダウンを開始
+    const isSoundReady = isSoundEnabled ? (isSoundLoaded && isAudioReady) : true;
+
+    if (isReadyToStart && isSoundReady) {
       startCountdown();
     }
-  }, [phase, isSoundLoaded, isAudioReady]);
+  }, [phase, isSoundLoaded, isAudioReady, isSoundEnabled, onCountdownComplete, startCountdown]);
 
   return {
     countdown,

@@ -159,8 +159,8 @@ export const QuestionMode = ({
     resetCountdown
   } = useGameCountdown(
     gameAudioIsSoundEnabled,
-    gameAudioIsSoundLoaded,
-    gameAudioIsAudioReady,
+    gameAudioIsSoundEnabled ? gameAudioIsSoundLoaded : true,
+    gameAudioIsSoundEnabled ? gameAudioIsAudioReady : true,
     handleCountdownComplete,
     phase
   );
@@ -481,7 +481,7 @@ export const QuestionMode = ({
       <GameStatus level={level} score={score} lives={remainingLives} />
 
       {/* カウントダウンモーダル */}
-      {phase === 'ready' && (
+      {phase === 'ready' && countdown !== undefined && (
         <CountdownModal level={level} countdown={countdown} />
       )}
 
