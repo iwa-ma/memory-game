@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import styled from 'styled-components';
 import { SettingsModal } from './SettingsModal';
 import { useSoundLoader } from '@/hooks/useSoundLoader';
+import { HowToModal } from './HowToModal';
+import { useState } from 'react';
 
 /** index.tsxから受け取るProps型 */
 type WaitingModeProps = {
@@ -39,8 +41,8 @@ const StartButton = styled(motion.button)`
   }
 `;
 
-/** 設定変更ボタンのスタイル */
-const SettingsButton = styled(motion.button)`
+/** 設定変更ボタンと遊び方ボタンのスタイル */
+const SecondaryButton = styled(motion.button)`
   background-color: #2196F3;
   color: white;
   border: none;
@@ -72,7 +74,7 @@ const ButtonContainer = styled.div`
     width: 100%;
     padding: 0 20px;
     
-    ${StartButton}, ${SettingsButton} {
+    ${StartButton}, ${SecondaryButton} {
       width: 100%;
       margin: 5px 0;
     }
@@ -84,9 +86,11 @@ export const WaitingMode = ({
   onStart, 
   isSettingsOpen, 
   onSettingsOpen, 
-  onSettingsClose 
+  onSettingsClose
 }: WaitingModeProps) => {
   const { isLoading } = useSoundLoader();
+  /** HowToモーダルの表示状態 */
+  const [isHowToOpen, setIsHowToOpen] = useState(false);
 
   // 設定変更時のみローディング状態を表示
   const showLoading = isLoading && isSettingsOpen;
@@ -109,16 +113,26 @@ export const WaitingMode = ({
         >
           {showLoading ? '読み込み中...' : 'ゲームスタート'}
         </StartButton>
-        <SettingsButton
+        <SecondaryButton
           onClick={onSettingsOpen}
           disabled={showLoading}
         >
           {showLoading ? '読み込み中...' : '設定変更'}
-        </SettingsButton>
+        </SecondaryButton>
+        <SecondaryButton
+          onClick={() => setIsHowToOpen(true)}
+          disabled={showLoading}
+        >
+          遊び方
+        </SecondaryButton>
       </ButtonContainer>
       <SettingsModal 
         isOpen={isSettingsOpen}
         onClose={onSettingsClose}
+      />
+      <HowToModal
+        isOpen={isHowToOpen}
+        onClose={() => setIsHowToOpen(false)}
       />
     </div>
   );
