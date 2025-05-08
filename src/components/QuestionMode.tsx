@@ -110,6 +110,18 @@ export const QuestionMode = ({
   /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
   const [isSoundLoaded, setIsSoundLoaded] = useState(false);
 
+  /** 結果モーダルを表示するかどうかを判定する関数(条件拡張を想定して関数化) */
+  const shouldShowResultModal = () => {
+    return showResult;
+  };
+
+  /** 最終結果モーダルを表示するかどうかを判定する関数 */
+  const shouldShowLastResultModal = () => {
+    // 最終レベルクリア時またはゲームオーバー時
+    return (level === finalLevel && isCorrect && correctCount === sequence.length) || 
+           (remainingLives === 0 && !isCorrect);
+  };
+
   /** 音声関連の処理 */
   const {
     isSoundEnabled: gameAudioIsSoundEnabled,
@@ -487,12 +499,11 @@ export const QuestionMode = ({
         onToggleHistory={onToggleHistory}
       />
 
-      {/* 結果表示コンポーネント　showResultがtrueの場合に表示 */}
-      {showResult && (
+      {/* 結果表示コンポーネント */}
+      {shouldShowResultModal() && (
         <>
           {/* 最終レベルクリア時またはゲームオーバー時はLastResultModalを表示 */}
-          {(level === finalLevel && isCorrect && correctCount === sequence.length) || 
-           (remainingLives === 0 && !isCorrect) ? (
+          {shouldShowLastResultModal() ? (
             <LastResultModal
               finalLevel={level}
               soundType={questionVoice}
