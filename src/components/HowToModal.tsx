@@ -186,7 +186,8 @@ export const HowToModal = ({ isOpen, onClose }: HowToModalProps) => {
           </ol>
           <Credit>
             開発者: iwakura<br />
-            音声素材提供: <a href="https://soundeffect-lab.info/" target="_blank" rel="noopener noreferrer">効果音ラボ</a>
+            音声素材提供: <a href="https://soundeffect-lab.info/" target="_blank" rel="noopener noreferrer">効果音ラボ</a><br />
+            Version: 1.0.0
           </Credit>
         </ModalContent>
       </Modal>
