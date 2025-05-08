@@ -261,8 +261,8 @@ export const QuestionMode = ({
     const questionScore = (isCurrentInputCorrect ? 50 : -20) + comboBonus + timeBonus;
     setCurrentQuestionScore(questionScore);
 
-    // 新しい合計スコアを計算
-    const newTotalScore = score + questionScore;
+    // 新しい合計スコアを計算（マイナスの場合は0に修正）
+    const newTotalScore = Math.max(0, score + questionScore);
     // スコアを即座に更新
     onScoreUpdate(newTotalScore);
 
