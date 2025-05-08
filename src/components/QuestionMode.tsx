@@ -8,11 +8,10 @@ import { InputHistory } from '@/components/question/InputHistory';
 import { ResultModal } from '@/components/question/ResultModal';
 import { LastResultModal } from '@/components/question/LastResultModal';
 import { generateSequence } from '@/utils/gameUtils';
-import { isMobileDevice } from '@/utils/deviceUtils';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/store/store';
-import { useSoundLoader } from '@/hooks/useSoundLoader';
 import { useGameCountdown } from '@/hooks/useGameCountdown';
+import { useGameAudio } from '@/hooks/useGameAudio';
 
 /** メッセージ枠のスタイル */
 const Instruction = styled.div`
@@ -78,8 +77,6 @@ export const QuestionMode = ({
 }: QuestionModeProps) => {
   /** 音声の種類 */
   const questionVoice = useSelector((state: RootState) => state.settings.questionVoice);
-  /** 音声オンオフ */
-  const isSoundEnabled = useSelector((state: RootState) => state.settings.soundEnabled);
   /** 開始レベル */
   const startLevel = useSelector((state: RootState) => state.settings.startLevel);
   /** 難易度 */
@@ -96,10 +93,6 @@ export const QuestionMode = ({
   const [isCorrect, setIsCorrect] = useState(false);
   /** 解答モードへの移行を示すモーダルの表示状態 */
   const [showAnswerMode, setShowAnswerMode] = useState(false);
-  /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
-  const [isSoundLoaded, setIsSoundLoaded] = useState(false);
-  /** 音声再生の準備状態 */
-  const [isAudioReady, setIsAudioReady] = useState(false);
   /** 残りライフ */
   const [remainingLives, setRemainingLives] = useState(lives);
   /** 正解した数字の数を管理する状態変数を追加 */
@@ -114,9 +107,19 @@ export const QuestionMode = ({
   const [comboCount, setComboCount] = useState(0);
   /** 解答開始時間を管理する状態変数を追加 */
   const [answerStartTime, setAnswerStartTime] = useState<number>(0);
+  /** 音声ファイルの読み込み状態(このコンポーネント内で管理) */
+  const [isSoundLoaded, setIsSoundLoaded] = useState(false);
 
-  /** 音声ローダー(実際の読み込み状態を表す) */
-  const { playSound, getSoundDuration, isLoading } = useSoundLoader();
+  /** 音声関連の処理 */
+  const {
+    isSoundEnabled: gameAudioIsSoundEnabled,
+    isSoundLoaded: gameAudioIsSoundLoaded,
+    isAudioReady: gameAudioIsAudioReady,
+    prepareAudio: gameAudioPrepareAudio,
+    playQuestionSound,
+    playSound,
+    getSoundDuration
+  } = useGameAudio(numbers);
   
   /** カウントダウン終了時の処理 */
   const handleCountdownComplete = () => {
@@ -133,25 +136,25 @@ export const QuestionMode = ({
     countdown,
     resetCountdown
   } = useGameCountdown(
-    isSoundEnabled,
-    isSoundLoaded,
-    isAudioReady,
+    gameAudioIsSoundEnabled,
+    gameAudioIsSoundLoaded,
+    gameAudioIsAudioReady,
     handleCountdownComplete,
     phase
   );
 
   // 音声ファイルの読み込み状態を監視
   useEffect(() => {
-    if (!isLoading) {
+    if (!isSoundLoaded) {
       setIsSoundLoaded(true);
     }
-  }, [isLoading]);
+  }, [isSoundLoaded]);
 
-  // 初回マウント時の問題生成
+  // 初回マウント時の問題生成、音声準備
   useEffect(() => {
     if (phase === 'ready' && sequence.length === 0) {
       handleGenerateSequence();
-      prepareAudio();
+      gameAudioPrepareAudio();
     }
   }, []);
 
@@ -191,59 +194,6 @@ export const QuestionMode = ({
     const newSequence = generateSequence(level, numbers.length);
     setSequence(newSequence);
     return newSequence;
-  };
-
-  /** 音声再生の準備を行う関数 */
-  const prepareAudio = async () => {
-    // モバイル端末の場合のみ音声の準備を行う
-    if (isMobileDevice()) {
-      try {
-        // 音声ファイルの準備
-        const sounds = {
-          // 共通の音声
-          common: ['correct', 'incorrect'],
-          // カウントダウンと開始音声
-          countdown: ['3', '2', '1', '0', 'start'],
-          // 音声タイプ別の音声
-          animal1: ['cat1', 'cat2', 'cat3', 'cat4'],
-          human1: Array.from({ length: numbers.length }, (_, i) => `num${i}`),
-          human2: Array.from({ length: numbers.length }, (_, i) => `num${i}`)
-        };
-
-        // 必要な音声ファイルを準備
-        const requiredSounds = [
-          ...sounds.common,
-          ...sounds.countdown,
-          ...(questionVoice === 'animal1' ? sounds.animal1 : sounds[questionVoice])
-        ];
-
-        console.log('音声ファイルの準備を開始:', JSON.stringify({
-          // 準備情報
-          preparation: {
-            voiceType: questionVoice,
-            totalSounds: requiredSounds.length,
-            sounds: requiredSounds
-          }
-        }, null, 2));
-        
-        // 各音声ファイルに対してplay()とpause()を実行
-        await Promise.all(requiredSounds.map(async (soundName) => {
-          const audio = new Audio();
-          audio.src = `/sounds/${questionVoice === 'animal1' ? 'animal1' : questionVoice}/${soundName}.mp3`;
-          audio.play();
-          audio.pause();
-        }));
-
-        setIsAudioReady(true);
-      } catch (error) {
-        console.warn('音声の準備に失敗しました:', error);
-        // エラーが発生しても準備完了として扱う
-        setIsAudioReady(true);
-      }
-    } else {
-      // モバイル端末以外の場合は準備完了として扱う
-      setIsAudioReady(true);
-    }
   };
 
   /** 解答を検証する関数 */
@@ -315,7 +265,7 @@ export const QuestionMode = ({
         // レベル内でミスがあったことを記録
         setHasMistakeInLevel(true);
 
-        if (isSoundEnabled) {
+        if (gameAudioIsSoundEnabled) {
           // 音声の長さを取得
           const soundDuration = getSoundDuration('incorrect');
           // 音声の長さが異常な値の場合はデフォルト値を使用
@@ -351,7 +301,7 @@ export const QuestionMode = ({
     setIsCorrect(true);
     setShowResult(true);
 
-    if (isSoundEnabled) {
+    if (gameAudioIsSoundEnabled) {
       // 音声の長さを取得
       const soundDuration = getSoundDuration('correct');
       // 音声の長さが異常な値の場合はデフォルト値を使用
@@ -411,40 +361,8 @@ export const QuestionMode = ({
             setCurrentIndex(i);
             
             // 音声が有効な場合、音声を再生
-            if (isSoundEnabled) {
-              try {
-                let soundName = '';
-                
-                if (questionVoice === 'animal1') {
-                  switch (sequence[i]) {
-                    case 0:
-                      soundName = 'cat1';
-                      break;
-                    case 1:
-                      soundName = 'cat2';
-                      break;
-                    case 2:
-                      soundName = 'cat3';
-                      break;
-                    case 3:
-                      soundName = 'cat4';
-                      break;
-                  }
-                } else {
-                  soundName = `num${sequence[i]}`;
-                }
-
-                // 音声の待機時間を計算
-                const displayDuration = (getSoundDuration(soundName) * 1000) + (isMobileDevice() ? 500 : 300);
-
-                // 音声の再生と表示時間の待機を同時に開始
-                await Promise.all([
-                  playSound(soundName),
-                  new Promise(resolve => setTimeout(resolve, displayDuration))
-                ]);
-              } catch (error) {
-                console.warn('音声の再生に失敗しました:', error);
-              }
+            if (gameAudioIsSoundEnabled) {
+              await playQuestionSound(sequence[i]);
             } else {
               // 音声無効時は表示時間のみ待機（1.3秒）
               await new Promise(resolve => setTimeout(resolve, 1300));
@@ -578,7 +496,7 @@ export const QuestionMode = ({
             <LastResultModal
               finalLevel={level}
               soundType={questionVoice}
-              isSoundEnabled={isSoundEnabled}
+              isSoundEnabled={gameAudioIsSoundEnabled}
               startLevel={startLevel}
               difficulty={difficulty}
               finalScore={score}
