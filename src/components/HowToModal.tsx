@@ -122,6 +122,23 @@ const ModalContent = styled.div`
   }
 `;
 
+const Credit = styled.div`
+  border-top: 1px solid #444;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  text-align: center;
+  color: #aaa;
+  font-size: 0.85rem;
+
+  a {
+    color: #61dafb;
+    text-decoration: underline;
+    &:hover {
+      color: #fff;
+    }
+  }
+`;
+
 type HowToModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -167,6 +184,10 @@ export const HowToModal = ({ isOpen, onClose }: HowToModalProps) => {
               <div className="image-placeholder"><img src="/images/howto/step3.png" alt="遊び方3" /></div>
             </li>
           </ol>
+          <Credit>
+            開発者: iwakura<br />
+            音声素材提供: <a href="https://soundeffect-lab.info/" target="_blank" rel="noopener noreferrer">効果音ラボ</a>
+          </Credit>
         </ModalContent>
       </Modal>
     </Overlay>
