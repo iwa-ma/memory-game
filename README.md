@@ -77,8 +77,28 @@
 
 ※バージョンは開発時点のものです。
 
-## 環境
-https://memory-game-14283.web.app/ にアクセス
+## 公開URL
+https://memory-game-14283.web.app/
+
+## 開発環境の準備
+1. このリポジトリをclone
+```bash
+git clone https://github.com/iwa-ma/memory-game.git
+cd memory-game
+```
+
+2. 依存パッケージのインストール
+```bash
+npm install
+```
+
+## アプリケーションの起動
+開発サーバーを起動するには、以下のコマンドを実行します：
+```bash
+npm run start
+```
+開発サーバーが起動したら、ターミナルに表示されるURLにアクセスしてください。
+（デフォルトでは http://localhost:5173 で起動します）
 
 ## 課題や今後の改善点
 ・パフォーマンス調整(全体、モバイル端末)  
